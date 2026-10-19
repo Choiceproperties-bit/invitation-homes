@@ -21,6 +21,8 @@ import {
   YouTubeIcon,
   LinkedInIcon
 } from './InvitationIcons';
+import { SAMPLE_PROPERTIES } from '../data/properties';
+import { PropertyListing } from '../types/rental';
 
 interface MarketItem {
   name: string;
@@ -58,6 +60,10 @@ export const InvitationHomesApp: React.FC = () => {
   const [activeMarketTab, setActiveMarketTab] = useState<'all' | 'sunbelt' | 'west' | 'midwest'>('all');
   const [showIconsModal, setShowIconsModal] = useState(false);
   const [copiedIcon, setCopiedIcon] = useState<string | null>(null);
+  const [selectedTourProperty, setSelectedTourProperty] = useState<PropertyListing | null>(null);
+  const [tourStep, setTourStep] = useState<'form' | 'confirmed'>('form');
+  const [tourDate, setTourDate] = useState('Today at 3:00 PM');
+  const [savedProperties, setSavedProperties] = useState<string[]>([]);
 
   const filteredMarkets = MARKETS.filter((m) => {
     if (searchQuery.trim()) {
@@ -389,6 +395,86 @@ export const InvitationHomesApp: React.FC = () => {
         </div>
       </section>
 
+      {/* Featured Available Homes Section */}
+      <section className="py-16 px-4 sm:px-8 max-w-7xl mx-auto border-b border-slate-100">
+        <div className="flex flex-col md:flex-row md:items-end justify-between mb-8 gap-4">
+          <div>
+            <span className="text-[#04a54f] font-bold text-xs uppercase tracking-wider">
+              Ready for Move-In
+            </span>
+            <h2 className="text-3xl font-extrabold text-[#231f20] mt-1">
+              Featured Single-Family Homes for Rent
+            </h2>
+            <p className="text-sm text-slate-600 mt-1">
+              Explore updated, pet-friendly homes equipped with Smart Home technology:
+            </p>
+          </div>
+          <div className="text-xs font-semibold text-slate-500">
+            Showing {SAMPLE_PROPERTIES.length} verified listings
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          {SAMPLE_PROPERTIES.map((prop) => (
+            <div key={prop.id} className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm hover:shadow-lg transition group flex flex-col justify-between">
+              <div>
+                <div className="relative h-48 overflow-hidden bg-slate-100">
+                  <img src={prop.featuredImage} alt={prop.title} className="w-full h-full object-cover group-hover:scale-105 transition duration-500" />
+                  <div className="absolute top-3 left-3 bg-[#04a54f] text-white text-[11px] font-extrabold px-2.5 py-1 rounded-full shadow-md">
+                    ${prop.monthlyRent.toLocaleString()}/mo
+                  </div>
+                  <button 
+                    onClick={() => {
+                      setSavedProperties(prev => prev.includes(prop.id) ? prev.filter(id => id !== prop.id) : [...prev, prop.id]);
+                      setSavedCount(c => savedProperties.includes(prop.id) ? c - 1 : c + 1);
+                    }}
+                    className="absolute top-3 right-3 p-1.5 rounded-full bg-white/80 hover:bg-white text-rose-500 backdrop-blur shadow-sm transition"
+                  >
+                    <Heart className={`w-4 h-4 ${savedProperties.includes(prop.id) ? 'fill-rose-500 text-rose-500' : 'text-slate-600'}`} />
+                  </button>
+                </div>
+                <div className="p-4">
+                  <div className="flex items-center gap-2 text-xs font-bold text-slate-700 mb-1">
+                    <span>{prop.bedrooms} Beds</span>
+                    <span>•</span>
+                    <span>{prop.bathrooms} Baths</span>
+                    <span>•</span>
+                    <span>{prop.squareFeet.toLocaleString()} sqft</span>
+                  </div>
+                  <h3 className="font-extrabold text-[#231f20] text-sm line-clamp-1 group-hover:text-[#04a54f] transition">
+                    {prop.title}
+                  </h3>
+                  <p className="text-xs text-slate-500 mt-1 flex items-center gap-1">
+                    <LocationPinIcon className="w-3.5 h-3.5 text-slate-400" />
+                    <span>{prop.address}, {prop.city}, {prop.state}</span>
+                  </p>
+                  <div className="mt-3 flex flex-wrap gap-1.5">
+                    <span className="text-[10px] font-bold text-[#04a54f] bg-emerald-50 px-2 py-0.5 rounded-full">
+                      ✓ Smart Home
+                    </span>
+                    <span className="text-[10px] font-bold text-slate-600 bg-slate-100 px-2 py-0.5 rounded-full">
+                      ✓ Pet Friendly
+                    </span>
+                  </div>
+                </div>
+              </div>
+              <div className="p-4 pt-0">
+                <button
+                  onClick={() => {
+                    setSelectedTourProperty(prop);
+                    setTourStep('form');
+                  }}
+                  className="w-full py-2 px-3 rounded-xl bg-slate-900 hover:bg-[#04a54f] text-white text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-sm"
+                >
+                  <span>Self-Guided Tour</span>
+                  <ChevronRight className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+
       {/* Markets Section */}
       <section className="py-16 px-4 sm:px-8 max-w-7xl mx-auto">
         <div className="flex flex-col md:flex-row md:items-end justify-between mb-8 gap-4">
@@ -545,6 +631,103 @@ export const InvitationHomesApp: React.FC = () => {
           </button>
         </div>
       </footer>
+
+      {/* Modal: Self-Guided Smart Tour Scheduler */}
+      {selectedTourProperty && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl overflow-hidden border border-slate-200">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <div className="flex items-center gap-2">
+                <span className="w-2.5 h-2.5 rounded-full bg-[#04a54f]"></span>
+                <h3 className="font-extrabold text-[#231f20] text-base">Schedule Self-Guided Tour</h3>
+              </div>
+              <button 
+                onClick={() => setSelectedTourProperty(null)}
+                className="text-slate-400 hover:text-slate-600 font-bold text-sm"
+              >
+                ✕
+              </button>
+            </div>
+
+            {tourStep === 'form' ? (
+              <div className="mt-4 space-y-4">
+                <div className="flex gap-3 bg-slate-50 p-3 rounded-xl border border-slate-100">
+                  <img 
+                    src={selectedTourProperty.featuredImage} 
+                    alt={selectedTourProperty.title} 
+                    className="w-16 h-16 rounded-lg object-cover" 
+                  />
+                  <div>
+                    <h4 className="font-extrabold text-[#231f20] text-xs sm:text-sm">{selectedTourProperty.title}</h4>
+                    <p className="text-[11px] text-slate-500">{selectedTourProperty.address}, {selectedTourProperty.city}</p>
+                    <p className="text-xs font-bold text-[#04a54f] mt-1">${selectedTourProperty.monthlyRent.toLocaleString()}/month</p>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">Select Tour Time:</label>
+                  <select 
+                    value={tourDate} 
+                    onChange={(e) => setTourDate(e.target.value)}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2.5 text-xs text-slate-800 font-medium"
+                  >
+                    <option>Today at 3:00 PM</option>
+                    <option>Today at 5:00 PM</option>
+                    <option>Tomorrow at 10:00 AM</option>
+                    <option>Tomorrow at 2:00 PM</option>
+                    <option>Saturday at 11:00 AM</option>
+                  </select>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">Full Name:</label>
+                    <input type="text" placeholder="Alex Morgan" className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 text-xs" />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">Phone Number:</label>
+                    <input type="tel" placeholder="(555) 000-0000" className="w-full bg-slate-50 border border-slate-200 rounded-lg p-2 text-xs" />
+                  </div>
+                </div>
+
+                <div className="bg-emerald-50 p-3 rounded-xl border border-emerald-100 text-xs text-emerald-800">
+                  <p className="font-semibold flex items-center gap-1.5">
+                    <CheckmarkIcon className="w-3.5 h-3.5 text-[#04a54f]" />
+                    <span>Instant Smart Lock PIN generated automatically</span>
+                  </p>
+                  <p className="text-[11px] text-emerald-700 mt-1">Tour privately on your schedule without an agent present.</p>
+                </div>
+
+                <button
+                  onClick={() => setTourStep('confirmed')}
+                  className="w-full py-3 bg-[#04a54f] hover:bg-[#0b763c] text-white font-extrabold text-xs rounded-xl shadow-md transition"
+                >
+                  Confirm Self-Guided Tour
+                </button>
+              </div>
+            ) : (
+              <div className="mt-4 text-center py-6 space-y-3">
+                <div className="w-12 h-12 rounded-full bg-emerald-100 text-[#04a54f] flex items-center justify-center mx-auto text-xl">
+                  ✓
+                </div>
+                <h4 className="font-extrabold text-base text-[#231f20]">Tour Confirmed!</h4>
+                <p className="text-xs text-slate-600 max-w-xs mx-auto">
+                  Your Smart Lock PIN code for <strong>{selectedTourProperty.address}</strong> has been sent to your phone for <strong>{tourDate}</strong>.
+                </p>
+                <div className="p-3 bg-slate-50 rounded-xl border border-dashed border-slate-300 font-mono text-sm font-bold text-slate-800 tracking-wider">
+                  ENTRY PIN: 7824#
+                </div>
+                <button
+                  onClick={() => setSelectedTourProperty(null)}
+                  className="mt-4 px-6 py-2 bg-slate-900 text-white rounded-lg text-xs font-bold"
+                >
+                  Done
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Modal: Downloaded Icons Gallery */}
       {showIconsModal && (
