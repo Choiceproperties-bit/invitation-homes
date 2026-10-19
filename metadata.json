@@ -1,0 +1,6 @@
+{
+  "name": "Zero-AI Website Cloner & Architectural Inspector",
+  "description": "Deep-dive analysis of JCodesMore ai-website-cloner-template, plus a 100% API-free and local website cloner, DOM inspector, asset extractor, and React/Tailwind code generator.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
