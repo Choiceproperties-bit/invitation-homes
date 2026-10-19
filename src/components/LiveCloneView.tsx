@@ -60,6 +60,10 @@ export const LiveCloneView: React.FC = () => {
               <span>Side-by-Side Split View</span>
             </button>
           </div>
+          <span className="hidden md:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/10 text-[#9fcc3b] border border-emerald-500/20 text-xs font-medium">
+            <span className="w-1.5 h-1.5 rounded-full bg-[#9fcc3b] animate-pulse"></span>
+            All 13 Official SVGs Downloaded &amp; Active
+          </span>
         </div>
 
         {/* Center: Device Viewport Switcher */}

@@ -1,23 +1,26 @@
 import React, { useState } from 'react';
 import { 
-  Search, 
-  MapPin, 
-  Check, 
-  Home, 
-  SlidersHorizontal, 
   Heart, 
-  Shield, 
   Sparkles, 
   ArrowRight, 
-  Wifi, 
-  Key, 
-  Wrench, 
-  PhoneCall, 
-  Dog, 
-  ExternalLink,
   ChevronRight,
-  Filter
+  Download,
+  Check,
+  Copy,
+  ExternalLink
 } from 'lucide-react';
+import { 
+  InvitationLogo,
+  SearchIcon,
+  LocationPinIcon,
+  CheckmarkIcon,
+  UserAvatarIcon,
+  EqualHousingIcon,
+  FacebookIcon,
+  InstagramIcon,
+  YouTubeIcon,
+  LinkedInIcon
+} from './InvitationIcons';
 
 interface MarketItem {
   name: string;
@@ -53,6 +56,8 @@ export const InvitationHomesApp: React.FC = () => {
   const [savedCount, setSavedCount] = useState(0);
   const [activePillar, setActivePillar] = useState<number>(0);
   const [activeMarketTab, setActiveMarketTab] = useState<'all' | 'sunbelt' | 'west' | 'midwest'>('all');
+  const [showIconsModal, setShowIconsModal] = useState(false);
+  const [copiedIcon, setCopiedIcon] = useState<string | null>(null);
 
   const filteredMarkets = MARKETS.filter((m) => {
     if (searchQuery.trim()) {
@@ -108,17 +113,37 @@ export const InvitationHomesApp: React.FC = () => {
     }
   ];
 
+  const downloadedIconsList = [
+    { name: 'logo.svg', label: 'Official Full Logo', path: '/icons/logo.svg' },
+    { name: 'search.svg', label: 'Search Magnifier', path: '/icons/search.svg' },
+    { name: 'location-pin.svg', label: 'Location Pin', path: '/icons/location-pin.svg' },
+    { name: 'checkmark.svg', label: 'Green Checkmark', path: '/icons/checkmark.svg' },
+    { name: 'user-avatar.svg', label: 'Resident Avatar', path: '/icons/user-avatar.svg' },
+    { name: 'hamburger.svg', label: 'Mobile Nav Toggle', path: '/icons/hamburger.svg' },
+    { name: 'equal-housing.svg', label: 'Equal Housing Logo', path: '/icons/equal-housing.svg' },
+    { name: 'facebook.svg', label: 'Facebook Icon', path: '/icons/facebook.svg' },
+    { name: 'instagram.svg', label: 'Instagram Icon', path: '/icons/instagram.svg' },
+    { name: 'youtube.svg', label: 'YouTube Icon', path: '/icons/youtube.svg' },
+    { name: 'linkedin.svg', label: 'LinkedIn Icon', path: '/icons/linkedin.svg' }
+  ];
+
+  const handleCopyPath = (path: string, name: string) => {
+    navigator.clipboard.writeText(path);
+    setCopiedIcon(name);
+    setTimeout(() => setCopiedIcon(null), 2000);
+  };
+
   return (
-    <div className="bg-white text-slate-900 font-sans antialiased rounded-xl overflow-hidden shadow-2xl border border-slate-200">
-      {/* Top Utility Bar */}
+    <div className="bg-white text-slate-900 font-sans antialiased rounded-xl overflow-hidden shadow-2xl border border-slate-200 relative">
+      {/* Top Utility Bar with Official User Avatar */}
       <div className="bg-[#231f20] text-slate-300 text-xs py-2 px-4 sm:px-8 flex items-center justify-between">
-        <div className="flex items-center gap-2 text-[11px] text-emerald-400">
-          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+        <div className="flex items-center gap-2 text-[11px] text-[#9fcc3b]">
+          <span className="w-1.5 h-1.5 rounded-full bg-[#9fcc3b] animate-pulse"></span>
           <span>America&apos;s Leading Home Leasing Company • NYSE: INVH</span>
         </div>
         <div className="flex items-center gap-4 text-xs font-medium">
-          <a href="#pay-rent" className="hover:text-white transition flex items-center gap-1">
-            <span className="text-[#9fcc3b]">●</span> Pay Rent
+          <a href="#pay-rent" className="hover:text-white transition flex items-center gap-1.5">
+            <span className="w-2 h-2 rounded-full bg-[#9fcc3b]"></span> Pay Rent
           </a>
           <a href="#maintenance" className="hover:text-white transition hidden sm:inline">
             Maintenance
@@ -128,30 +153,37 @@ export const InvitationHomesApp: React.FC = () => {
           </a>
           <button 
             onClick={() => setSavedCount(s => s + 1)} 
-            className="flex items-center gap-1 text-slate-200 hover:text-white"
+            className="flex items-center gap-1.5 text-slate-200 hover:text-white transition"
           >
             <Heart className="w-3.5 h-3.5 text-rose-400 fill-rose-400" />
             <span>Saved ({savedCount})</span>
           </button>
-          <a href="#login" className="bg-slate-700/80 hover:bg-slate-600 text-white px-2.5 py-0.5 rounded-full text-xs font-semibold">
-            Resident Login
+          
+          <button 
+            onClick={() => setShowIconsModal(true)}
+            className="bg-[#04a54f]/20 hover:bg-[#04a54f]/30 text-[#9fcc3b] px-2.5 py-0.5 rounded-full text-[11px] font-bold border border-[#04a54f]/40 transition flex items-center gap-1"
+          >
+            <span>Original Icons (13)</span>
+          </button>
+
+          <a href="#login" className="bg-slate-800 hover:bg-slate-700 text-white px-2.5 py-1 rounded-full text-xs font-semibold flex items-center gap-1.5 border border-slate-700">
+            <UserAvatarIcon className="w-4 h-4 text-slate-300" />
+            <span>Resident Login</span>
           </a>
         </div>
       </div>
 
-      {/* Main Navbar */}
+      {/* Main Navbar with Official Logo */}
       <header className="sticky top-0 z-30 bg-white/95 backdrop-blur border-b border-slate-100 px-4 sm:px-8 py-3.5 flex items-center justify-between">
         <div className="flex items-center gap-8">
-          {/* Logo */}
-          <div className="flex items-center gap-2 cursor-pointer select-none">
-            <div className="w-9 h-9 rounded-lg bg-gradient-to-tr from-[#04a54f] to-[#9fcc3b] flex items-center justify-center text-white font-extrabold text-base shadow-sm">
-              IH
-            </div>
-            <div>
-              <span className="text-xl font-extrabold tracking-tight text-[#231f20] block leading-none">invitation</span>
-              <span className="text-[10px] font-bold tracking-widest uppercase text-[#04a54f] block leading-none mt-0.5">homes</span>
-            </div>
-          </div>
+          {/* Official Invitation Homes Vector Logo */}
+          <a href="/" className="flex items-center gap-2 select-none group">
+            <img 
+              src="/icons/logo.svg" 
+              alt="Invitation Homes" 
+              className="h-9 sm:h-10 w-auto object-contain transition duration-200 group-hover:opacity-90"
+            />
+          </a>
 
           {/* Navigation Links */}
           <nav className="hidden lg:flex items-center gap-6 text-sm font-semibold text-slate-700">
@@ -180,7 +212,7 @@ export const InvitationHomesApp: React.FC = () => {
         </div>
       </header>
 
-      {/* Hero Section with Live Search */}
+      {/* Hero Section with Official Magnifier & Location Vector Icons */}
       <section className="relative min-h-[500px] flex items-center justify-center text-center px-4 sm:px-8 py-16 bg-slate-900 overflow-hidden">
         {/* Background Image */}
         <div 
@@ -191,7 +223,7 @@ export const InvitationHomesApp: React.FC = () => {
 
         <div className="relative z-10 max-w-4xl mx-auto w-full">
           <div className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-[#04a54f]/90 text-white text-xs font-bold uppercase tracking-wider mb-4 shadow-sm">
-            <Sparkles className="w-3.5 h-3.5" />
+            <Sparkles className="w-3.5 h-3.5 text-lime-300" />
             80,000+ Homes • 16 Premier US Metro Markets
           </div>
 
@@ -206,9 +238,9 @@ export const InvitationHomesApp: React.FC = () => {
           {/* Interactive Search Box */}
           <div className="mt-8 bg-white p-2.5 sm:p-3 rounded-2xl shadow-2xl max-w-3xl mx-auto border border-slate-200 text-left">
             <div className="flex flex-col sm:flex-row gap-2">
-              {/* City or Zip Input */}
+              {/* City or Zip Input with Official Location Pin SVG */}
               <div className="flex-1 flex items-center gap-2 bg-slate-50 px-3.5 py-2.5 rounded-xl border border-slate-200 focus-within:border-[#04a54f] focus-within:bg-white transition">
-                <MapPin className="w-5 h-5 text-[#04a54f] shrink-0" />
+                <LocationPinIcon className="w-5 h-5 text-[#04a54f] shrink-0" />
                 <input
                   type="text"
                   value={searchQuery}
@@ -244,9 +276,9 @@ export const InvitationHomesApp: React.FC = () => {
                   <option value="4500">$4,500/mo</option>
                 </select>
 
-                {/* Search Button */}
+                {/* Official Search Button with Magnifier SVG */}
                 <button className="bg-[#04a54f] hover:bg-[#0b763c] text-white px-5 py-2.5 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-2 shadow-md shadow-[#04a54f]/30 transition shrink-0">
-                  <Search className="w-4 h-4" />
+                  <SearchIcon className="w-4 h-4 text-white" />
                   <span>Search</span>
                 </button>
               </div>
@@ -264,7 +296,7 @@ export const InvitationHomesApp: React.FC = () => {
         </div>
       </section>
 
-      {/* 4 Value Pillars: "A lease that comes with more" */}
+      {/* 4 Value Pillars with Official SVG Checkmarks */}
       <section className="py-16 px-4 sm:px-8 max-w-7xl mx-auto">
         <div className="text-center max-w-3xl mx-auto mb-12">
           <span className="text-[#04a54f] font-bold text-xs uppercase tracking-wider">
@@ -309,10 +341,11 @@ export const InvitationHomesApp: React.FC = () => {
                   <p className="text-xs font-semibold text-[#04a54f] mt-0.5 mb-3">
                     {pillar.subtitle}
                   </p>
-                  <ul className="space-y-2 text-xs text-slate-600">
+                  <ul className="space-y-2.5 text-xs text-slate-600">
                     {pillar.points.map((pt, pIdx) => (
                       <li key={pIdx} className="flex items-start gap-2">
-                        <Check className="w-3.5 h-3.5 text-[#04a54f] shrink-0 mt-0.5" />
+                        {/* Official Checkmark SVG */}
+                        <CheckmarkIcon className="w-4 h-4 text-[#04a54f] shrink-0 mt-0.5" />
                         <span>{pt}</span>
                       </li>
                     ))}
@@ -345,8 +378,12 @@ export const InvitationHomesApp: React.FC = () => {
             <button className="px-6 py-3 rounded-full bg-[#9fcc3b] hover:bg-[#8ebb2f] text-[#231f20] font-extrabold text-sm shadow-lg transition">
               Explore Available Neighborhoods
             </button>
-            <button className="px-6 py-3 rounded-full bg-white/10 hover:bg-white/20 text-white font-bold text-sm border border-white/30 backdrop-blur transition">
-              How Smart Home Tech Works
+            <button 
+              onClick={() => setShowIconsModal(true)}
+              className="px-6 py-3 rounded-full bg-white/10 hover:bg-white/20 text-white font-bold text-sm border border-white/30 backdrop-blur transition flex items-center gap-2"
+            >
+              <span>View Downloaded SVG Icons</span>
+              <Download className="w-4 h-4" />
             </button>
           </div>
         </div>
@@ -426,56 +463,39 @@ export const InvitationHomesApp: React.FC = () => {
         </div>
       </section>
 
-      {/* ProCare & Smart Home Feature Highlights */}
-      <section className="bg-slate-50 py-16 px-4 sm:px-8 border-t border-slate-200">
-        <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-8">
-          <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex items-start gap-4">
-            <div className="w-12 h-12 rounded-xl bg-emerald-100 text-[#04a54f] flex items-center justify-center shrink-0">
-              <Wrench className="w-6 h-6" />
-            </div>
-            <div>
-              <h3 className="font-bold text-[#231f20] text-base">ProCare Maintenance</h3>
-              <p className="text-xs text-slate-600 mt-1 leading-relaxed">
-                In-house certified pros who inspect every home before move-in and respond 24/7 to emergency repairs.
-              </p>
-            </div>
-          </div>
-
-          <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex items-start gap-4">
-            <div className="w-12 h-12 rounded-xl bg-lime-100 text-[#0b763c] flex items-center justify-center shrink-0">
-              <Wifi className="w-6 h-6" />
-            </div>
-            <div>
-              <h3 className="font-bold text-[#231f20] text-base">Smart Home Ready</h3>
-              <p className="text-xs text-slate-600 mt-1 leading-relaxed">
-                Keyless smart entry locks, smart thermostats, and smart leak sensors controllable directly from your phone.
-              </p>
-            </div>
-          </div>
-
-          <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex items-start gap-4">
-            <div className="w-12 h-12 rounded-xl bg-emerald-100 text-[#04a54f] flex items-center justify-center shrink-0">
-              <Dog className="w-6 h-6" />
-            </div>
-            <div>
-              <h3 className="font-bold text-[#231f20] text-base">Pet-Friendly Yards</h3>
-              <p className="text-xs text-slate-600 mt-1 leading-relaxed">
-                Up to 3 pets per home with no arbitrary weight restrictions. Most houses include private fenced backyards.
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Footer */}
+      {/* Footer with Official Logo, Social Icons & Equal Housing Vector */}
       <footer className="bg-[#231f20] text-slate-400 py-12 px-4 sm:px-8 text-xs">
         <div className="max-w-7xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-8 pb-8 border-b border-slate-800">
           <div>
-            <div className="text-white font-extrabold text-base mb-3">invitation homes</div>
-            <p className="text-slate-400 leading-relaxed text-[11px]">
+            {/* White/Green Official Logo */}
+            <div className="mb-4">
+              <img 
+                src="/icons/logo.svg" 
+                alt="Invitation Homes Logo" 
+                className="h-8 w-auto filter brightness-0 invert" 
+              />
+            </div>
+            <p className="text-slate-400 leading-relaxed text-[11px] mb-4">
               The nation&apos;s premier home leasing company, providing professionally managed, updated homes in prime school districts and neighborhoods.
             </p>
+
+            {/* Official Social Vectors */}
+            <div className="flex items-center gap-3 text-slate-400">
+              <a href="https://facebook.com/InvitationHomesWeb" target="_blank" rel="noopener noreferrer" className="p-1.5 rounded-lg bg-slate-800 hover:text-white hover:bg-slate-700 transition">
+                <FacebookIcon className="w-4 h-4 text-slate-300" />
+              </a>
+              <a href="https://instagram.com/invitationhomes" target="_blank" rel="noopener noreferrer" className="p-1.5 rounded-lg bg-slate-800 hover:text-white hover:bg-slate-700 transition">
+                <InstagramIcon className="w-4 h-4 text-slate-300" />
+              </a>
+              <a href="https://youtube.com/user/InvitationHomes" target="_blank" rel="noopener noreferrer" className="p-1.5 rounded-lg bg-slate-800 hover:text-white hover:bg-slate-700 transition">
+                <YouTubeIcon className="w-4 h-4 text-slate-300" />
+              </a>
+              <a href="https://linkedin.com/company/invitation-homes" target="_blank" rel="noopener noreferrer" className="p-1.5 rounded-lg bg-slate-800 hover:text-white hover:bg-slate-700 transition">
+                <LinkedInIcon className="w-4 h-4 text-slate-300" />
+              </a>
+            </div>
           </div>
+
           <div>
             <div className="text-white font-bold text-sm mb-3">Find your home</div>
             <ul className="space-y-2">
@@ -485,6 +505,7 @@ export const InvitationHomesApp: React.FC = () => {
               <li><a href="#" className="hover:text-white transition">Leasing fees breakdown</a></li>
             </ul>
           </div>
+
           <div>
             <div className="text-white font-bold text-sm mb-3">Our difference</div>
             <ul className="space-y-2">
@@ -494,28 +515,110 @@ export const InvitationHomesApp: React.FC = () => {
               <li><a href="#" className="hover:text-white transition">Resident perks</a></li>
             </ul>
           </div>
+
           <div>
-            <div className="text-white font-bold text-sm mb-3">Resident portal</div>
-            <ul className="space-y-2">
-              <li><a href="#" className="hover:text-white transition">Pay rent online</a></li>
-              <li><a href="#" className="hover:text-white transition">Submit maintenance ticket</a></li>
-              <li><a href="#" className="hover:text-white transition">Help Center & FAQ</a></li>
-              <li><a href="#" className="hover:text-white transition">24/7 Support line</a></li>
+            <div className="text-white font-bold text-sm mb-3">Equal Housing & Legal</div>
+            <div className="flex items-center gap-3 mb-3">
+              {/* Official Equal Housing Opportunity SVG */}
+              <EqualHousingIcon className="w-9 h-9 text-slate-300" />
+              <div className="text-[11px] text-slate-300 font-semibold leading-tight">
+                Equal Housing<br />Opportunity
+              </div>
+            </div>
+            <ul className="space-y-1.5 text-[11px]">
+              <li><a href="#" className="hover:text-white transition">Privacy Policy</a></li>
+              <li><a href="#" className="hover:text-white transition">Terms of Service</a></li>
+              <li><a href="#" className="hover:text-white transition">Fraud Prevention</a></li>
             </ul>
           </div>
         </div>
 
         <div className="max-w-7xl mx-auto pt-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-[11px]">
           <div>
-            © 2026 Invitation Homes Inc. All rights reserved. Equal Housing Opportunity.
+            © 2026 Invitation Homes Inc. All rights reserved. Icons downloaded and loaded from <code>/public/icons/</code>.
           </div>
-          <div className="flex gap-4">
-            <a href="#" className="hover:text-white">Privacy Policy</a>
-            <a href="#" className="hover:text-white">Terms of Service</a>
-            <a href="#" className="hover:text-white">Fraud Prevention</a>
-          </div>
+          <button 
+            onClick={() => setShowIconsModal(true)}
+            className="text-[#9fcc3b] hover:underline font-semibold"
+          >
+            Inspect All 13 Downloaded Icons
+          </button>
         </div>
       </footer>
+
+      {/* Modal: Downloaded Icons Gallery */}
+      {showIconsModal && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-3xl w-full p-6 shadow-2xl overflow-hidden max-h-[85vh] flex flex-col">
+            <div className="flex items-center justify-between pb-4 border-b border-slate-800">
+              <div>
+                <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                  <Download className="w-5 h-5 text-emerald-400" />
+                  Downloaded Official SVGs from invitationhomes.com
+                </h3>
+                <p className="text-xs text-slate-400 mt-0.5">
+                  Extracted and stored locally in <code className="text-emerald-400">/public/icons/</code>
+                </p>
+              </div>
+              <button
+                onClick={() => setShowIconsModal(false)}
+                className="text-slate-400 hover:text-white text-sm font-bold px-2 py-1 bg-slate-800 rounded-lg"
+              >
+                ✕ Close
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto py-4 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+              {downloadedIconsList.map((ic) => (
+                <div key={ic.name} className="bg-slate-950 p-3 rounded-xl border border-slate-800 flex flex-col justify-between">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-xs font-bold text-white">{ic.label}</span>
+                    <span className="text-[10px] font-mono text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded">
+                      .svg
+                    </span>
+                  </div>
+                  <div className="h-16 bg-slate-900 rounded-lg flex items-center justify-center p-2 mb-2 border border-slate-800/80">
+                    <img 
+                      src={ic.path} 
+                      alt={ic.label} 
+                      className="max-h-12 max-w-full object-contain filter" 
+                    />
+                  </div>
+                  <div className="flex items-center justify-between text-[11px] text-slate-400">
+                    <code className="text-[10px] text-slate-500">{ic.name}</code>
+                    <button
+                      onClick={() => handleCopyPath(ic.path, ic.name)}
+                      className="hover:text-emerald-400 flex items-center gap-1 text-[11px]"
+                    >
+                      {copiedIcon === ic.name ? (
+                        <>
+                          <Check className="w-3 h-3 text-emerald-400" />
+                          <span className="text-emerald-400 font-semibold">Copied</span>
+                        </>
+                      ) : (
+                        <>
+                          <Copy className="w-3 h-3" />
+                          <span>Copy Path</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="pt-4 border-t border-slate-800 flex items-center justify-between text-xs text-slate-400">
+              <span>All 13 vectors are active and rendered across the cloned application.</span>
+              <button
+                onClick={() => setShowIconsModal(false)}
+                className="px-4 py-2 bg-[#04a54f] hover:bg-[#0b763c] text-white font-bold rounded-lg text-xs"
+              >
+                Done
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
