@@ -1,93 +1,69 @@
-# Invitation Homes Platform — Development Roadmap & Architecture
+# Frontend Parity and Production Roadmap
 
-This repository is pre-configured and architected to support continuous development into a full-scale **Single-Family Home Leasing and Property Management Platform**.
+Status date: 2026-10-20
 
----
+This repository is an authorized frontend backup in progress. The active application is a Vite/React site. It currently uses local sample listings and does not provide production leasing, account, payment, tour-booking, or resident-service backends.
 
-## 🏗️ Project Architecture & Structure
+## Current Implementation
 
-```
-├── public/
-│   ├── icons/                 # All 13 official SVGs from invitationhomes.com
-│   └── Logo.svg               # Official primary brand vector logo
-├── src/
-│   ├── components/
-│   │   ├── InvitationHomesApp.tsx  # Core interactive marketplace application
-│   │   ├── InvitationIcons.tsx     # Reusable vector icon library
-│   │   ├── LiveCloneView.tsx       # Live comparison & multi-device viewport engine
-│   │   ├── AccuracyAudit.tsx       # Architectural parity audit
-│   │   ├── FutureUseCases.tsx      # Roadmap & integration playbooks
-│   │   └── QuickTranspiler.tsx     # AST HTML-to-React generator
-│   ├── data/
-│   │   ├── properties.ts           # Seed listings (single-family homes)
-│   │   ├── presets.ts              # Curated site presets
-│   │   └── repoBreakdown.ts        # Architecture critique and analysis
-│   ├── types/
-│   │   ├── rental.ts               # PropertyListing, Filters, Applications, Tours
-│   │   └── index.ts                # Cloner AST types
-│   ├── services/                   # Extension point for live MLS / Supabase / Stripe
-│   ├── App.tsx                     # Top-level application shell
-│   └── main.tsx                    # React 19 root
-├── server.ts                       # Full-stack Node/Express engine + Cheerio AST scraper
-├── package.json                    # Dependencies & dev scripts
-└── README.md                       # Setup and usage guide
-```
+- Shared responsive site header and footer with local Invitation Homes logo and hamburger assets.
+- Homepage sections for the renter value pillars, regional markets, communities, resident services, application guidance, apps, and testimonials.
+- Search and market routes with URL-synchronized location, price, bed/bath, area, pet, Smart Home, sort, layout, and page state.
+- Fixture-backed listing cards and property detail pages with a photo gallery, rent/deposit summary, disclosures, school information, and affordability estimate.
+- Optional property data fields for 360-degree tour and floor-plan media; viewer controls only appear when those assets exist.
+- Qualification, before-you-apply, application-process, and leasing-fees pages.
+- Google Maps component with clustered price markers and map/list selection wiring. A restricted Google Maps API key is required for map tiles; the no-key state is intentional.
+- Playwright capture script at `scripts/capture-visual-parity.mjs` for desktop/mobile homepage screenshots and basic browser diagnostics.
 
----
+## Remaining Frontend Work
 
-## 🎯 5-Phase Production Roadmap
+### 1. Complete Visual Parity Review
 
-### Phase 1: Dynamic Property Search & Map View
-- [ ] Connect interactive Mapbox GL / Google Maps Platform with custom price pins.
-- [ ] Multi-filter drawer: Minimum/Maximum Sqft, Move-in Date, Single-story vs Multi-story, Garage size.
-- [ ] Real-time URL query param synchronization (`/search?city=Atlanta&beds=4&maxPrice=2500`).
+- Run `npm run visual:capture` at 1440x900 and 390x844, review every capture against the official site, and fix layout, typography, assets, spacing, and responsive differences.
+- Capture and compare search, market, property-detail, and renter-guide routes, not just the homepage.
+- Confirm keyboard behavior, focus states, accessible names, mobile menu behavior, and map interactions.
+- Treat screenshots as acceptance artifacts; do not describe the replica as pixel-identical until the comparison has been reviewed.
 
-### Phase 2: Property Detail Page (PDP) & Self-Guided Tours
-- [ ] High-resolution photo gallery with full-screen lightbox modal.
-- [ ] Matterport / 3D Virtual Tour embed viewer.
-- [ ] Interactive self-guided tour scheduler with calendar time-slot selection.
-- [ ] Smart Home lock code delivery integration (Rently / PointCentral API).
+### 2. Finish Search and Map Experience
 
-### Phase 3: Online Digital Lease Application
-- [ ] Multi-step application wizard (Personal Info -> Employment/Income -> Rental History -> Pet Details).
-- [ ] Plaid integration for instant income & bank verification.
-- [ ] TransUnion / Experian credit & background check automation.
-- [ ] E-Signature integration (DocuSign / HelloSign API).
+- Configure the authorized, domain-restricted Google Maps key and map ID in the deployment environment; verify tiles, clustering, info windows, zoom, and mobile gestures.
+- Replace fixture inventory and market counts with an authorized inventory feed when the backend phase begins.
+- Confirm result-card ordering, pagination, saved searches, empty states, and list/map synchronization against the official experience.
 
-### Phase 4: Resident Portal & Automated Rent Collection
-- [ ] Tenant dashboard with upcoming rent due date and payment history.
-- [ ] Stripe ACH bank transfer & credit card autopay.
-- [ ] ProCare maintenance ticket submission with photo uploads and status tracker.
-- [ ] Smart Home device manager (remote lock control, thermostat temperature presets).
+### 3. Complete Property Detail Parity
 
-### Phase 5: Owner & Property Manager CRM
-- [ ] Portfolio performance dashboard: occupancy rate, average rent/sqft, delinquent accounts.
-- [ ] Work order dispatch system for local vendor technicians.
-- [ ] Automated lease renewal notification engine.
+- Populate the actual property media and data fields, including image sets, floor plans, 360-degree tours, rent breakdowns, availability, disclosures, nearby information, and lease options.
+- Match the official gallery/viewer, all-in pricing, and application/tour calls to action for each listing type.
+- Do not invent tour links or access codes when a listing does not provide authorized values.
 
----
+### 4. Complete Remaining Public Routes
 
-## 🔌 API & Integration Cheatsheet
+- Reproduce the communities, difference/service, resident resource, FAQ, contact, privacy, and terms routes with page-specific content and layouts.
+- Verify every navigation and footer destination against the official route inventory, including external resident, payment, support, investor, and career services.
 
-### 1. Live MLS & Rental Listings API
-```typescript
-// RentCast API: https://www.rentcast.io/api
-const res = await fetch('https://api.rentcast.io/v1/listings/rental/long-term?city=Atlanta&state=GA', {
-  headers: { 'X-Api-Key': process.env.RENTCAST_API_KEY }
-});
+## Backend Phase (After Frontend Review)
+
+- Use Supabase for app-owned data and authentication where appropriate; define schema, migrations, row-level security, and role policies before storing resident or applicant data.
+- Connect authorized inventory and availability data, saved homes/searches, and application state.
+- Integrate approved identity/income screening, e-signature, payment, tour scheduling, smart-lock, and maintenance providers as separate services.
+- Keep secrets server-side. Do not put service-role keys, payment secrets, screening credentials, or lock codes in Vite client variables.
+
+## Security and Release Gates
+
+- The Express server contains a URL-fetching `/api/clone` endpoint. Before any public deployment, restrict or remove it, validate destinations against SSRF, add payload/time/rate limits, and protect access.
+- Confirm authorization and asset usage for the target deployment and preserve required legal, privacy, fair-housing, and accessibility requirements.
+- Test responsive behavior and browser compatibility, then add route and interaction tests for the renter workflows.
+- Run `npm run lint`, `npm run build`, route smoke tests, and the visual capture suite in CI before release.
+- Add production logging, monitoring, health checks, content/security headers, backup and rollback procedures, and an incident contact path.
+
+## Useful Commands
+
+```bash
+npm ci
+npm run dev
+npm run lint
+npm run build
+npm run visual:capture
 ```
 
-### 2. Database Connection (Supabase / PostgreSQL)
-```typescript
-import { createClient } from '@supabase/supabase-js';
-export const supabase = createClient(
-  process.env.VITE_SUPABASE_URL!,
-  process.env.VITE_SUPABASE_ANON_KEY!
-);
-```
-
-### 3. Stripe Rent Autopay
-```typescript
-import Stripe from 'stripe';
-export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
-```
+Set `VITE_GOOGLE_MAPS_API_KEY` and optionally `VITE_GOOGLE_MAP_ID` locally or in the deployment environment. Restrict the Maps key to approved origins and APIs; do not commit it.

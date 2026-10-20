@@ -9,11 +9,14 @@
     "preview": "vite preview",
     "clean": "rm -rf dist server.js",
     "lint": "tsc --noEmit",
+    "visual:capture": "node scripts/capture-visual-parity.mjs",
     "start": "tsx server.ts"
   },
   "dependencies": {
     "@google/genai": "^2.4.0",
+    "@googlemaps/markerclusterer": "^2.6.2",
     "@tailwindcss/vite": "^4.3.3",
+    "@vis.gl/react-google-maps": "^1.10.1",
     "@vitejs/plugin-react": "^6.1.1",
     "cheerio": "^1.2.0",
     "dotenv": "^17.2.3",
@@ -26,7 +29,9 @@
     "vite": "^8.3.0"
   },
   "devDependencies": {
+    "@playwright/test": "^1.64.1",
     "@types/express": "^4.17.21",
+    "@types/google.maps": "^3.66.7",
     "@types/jszip": "^3.4.1",
     "@types/node": "^22.14.0",
     "@types/react": "^19.3.0",
