@@ -132,10 +132,11 @@ async function startServer() {
   const app = express();
   const PORT = Number(process.env.PORT) || 3000;
 
-  app.use(express.json({ limit: '20mb' }));
+  if (process.env.NODE_ENV !== 'production' && process.env.ENABLE_CLONER_API === 'true') {
+    app.use(express.json({ limit: '20mb' }));
 
-  // Scrape & transpile route
-  app.post('/api/clone', async (req, res) => {
+    // Scrape & transpile route
+    app.post('/api/clone', async (req, res) => {
     try {
       const { url, rawHtml } = req.body;
       let targetHtml = '';
@@ -372,10 +373,10 @@ module.exports = {
       console.error('Error cloning site:', err);
       res.status(500).json({ error: err.message || 'Failed to process website' });
     }
-  });
+    });
 
-  // Transpile custom snippet endpoint
-  app.post('/api/transpile', (req, res) => {
+    // Transpile custom snippet endpoint
+    app.post('/api/transpile', (req, res) => {
     try {
       const { html, componentName } = req.body;
       if (!html) {
@@ -386,7 +387,8 @@ module.exports = {
     } catch (err: any) {
       res.status(500).json({ error: err.message || 'Transpilation failed' });
     }
-  });
+    });
+  }
 
   // Vite middleware in dev or static files in prod
   if (process.env.NODE_ENV === 'production') {

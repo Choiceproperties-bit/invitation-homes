@@ -7,6 +7,7 @@ import { RenterGuidePage } from './RenterGuides';
 import { GoogleRentalMap } from './GoogleRentalMap';
 import { getPropertyBySlug, searchPropertyListings } from '../services/propertyRepository';
 import { isSupabaseConfigured } from '../lib/supabaseClient';
+import { getPropertyImages } from '../lib/propertyImages';
 
 const contentPages: Record<string, { title: string; intro: string; links: [string, string][] }> = {
   '/communities/': { title: 'Rental communities', intro: 'Explore newly built single-family rental homes in select communities.', links: [['Find homes for rent', '/search/houses-for-rent'], ['Before you apply', '/before-you-apply']] },
@@ -36,6 +37,29 @@ const contentPages: Record<string, { title: string; intro: string; links: [strin
   '/terms': { title: 'Terms', intro: 'Review the terms and conditions for this website.', links: [['Privacy', '/privacy']] }
 };
 
+const MARKET_ROUTE_LABELS: Record<string, string> = {
+  'atlanta-georgia': 'Atlanta',
+  'austin-texas': 'Austin',
+  'charlotte-north-carolina': 'Carolinas',
+  'chicago-illinois': 'Chicago',
+  'dallas-texas': 'Dallas-Fort Worth',
+  'denver-colorado': 'Denver',
+  'houston-texas': 'Houston',
+  'jacksonville-florida': 'Jacksonville',
+  'las-vegas-nevada': 'Las Vegas',
+  'minneapolis-minnesota': 'Minneapolis',
+  'sacramento-california': 'Northern California',
+  'orlando-florida': 'Orlando',
+  'phoenix-arizona': 'Phoenix',
+  'salt-lake-city-utah': 'Salt Lake City',
+  'san-antonio-texas': 'San Antonio',
+  'seattle-washington': 'Seattle',
+  'miami-florida': 'South Florida/Miami',
+  'los-angeles-california': 'Southern California',
+  'tampa-florida': 'Tampa',
+  'nashville-tennessee': 'Nashville'
+};
+
 function HomeCard({ property, selected, onSelect }: { property: PropertyListing; selected: boolean; onSelect: (homeId: string) => void }) {
   const [saved, setSaved] = useState(false);
   return (
@@ -59,9 +83,10 @@ function HomeCard({ property, selected, onSelect }: { property: PropertyListing;
   );
 }
 
-function SearchPage({ marketName }: { marketName?: string }) {
+function SearchPage({ marketName, marketSlug }: { marketName?: string; marketSlug?: string }) {
   const initialParams = new URLSearchParams(window.location.search);
-  const [location, setLocation] = useState(initialParams.get('location') ?? marketName ?? '');
+  const initialLocation = initialParams.get('location') ?? (isSupabaseConfigured && marketSlug ? '' : marketName ?? '');
+  const [location, setLocation] = useState(initialLocation);
   const [bedrooms, setBedrooms] = useState(initialParams.get('beds') ?? 'any');
   const [bathrooms, setBathrooms] = useState(initialParams.get('baths') ?? 'any');
   const [minPrice, setMinPrice] = useState(initialParams.get('minPrice') ?? '');
@@ -115,7 +140,7 @@ function SearchPage({ marketName }: { marketName?: string }) {
   useEffect(() => {
     const restoreFromUrl = () => {
       const params = new URLSearchParams(window.location.search);
-      setLocation(params.get('location') ?? marketName ?? '');
+      setLocation(params.get('location') ?? (!isSupabaseConfigured && marketSlug ? marketName ?? '' : ''));
       setBedrooms(params.get('beds') ?? 'any');
       setBathrooms(params.get('baths') ?? 'any');
       setMinPrice(params.get('minPrice') ?? '');
@@ -131,7 +156,7 @@ function SearchPage({ marketName }: { marketName?: string }) {
     };
     window.addEventListener('popstate', restoreFromUrl);
     return () => window.removeEventListener('popstate', restoreFromUrl);
-  }, [marketName]);
+  }, [marketName, marketSlug]);
 
   const activeFilterCount = [
     bedrooms !== 'any',
@@ -153,6 +178,7 @@ function SearchPage({ marketName }: { marketName?: string }) {
     setInventoryError(null);
     searchPropertyListings({
       query: location,
+      marketSlug,
       minPrice,
       maxPrice,
       bedrooms,
@@ -182,7 +208,7 @@ function SearchPage({ marketName }: { marketName?: string }) {
         if (active) setInventoryLoading(false);
       });
     return () => { active = false; };
-  }, [location, minPrice, maxPrice, bedrooms, bathrooms, minSqft, maxSqft, petFriendly, smartHome, sortOrder, currentPage]);
+  }, [location, marketSlug, minPrice, maxPrice, bedrooms, bathrooms, minSqft, maxSqft, petFriendly, smartHome, sortOrder, currentPage]);
 
   useEffect(() => {
     if (page !== currentPage) setPage(currentPage);
@@ -299,8 +325,11 @@ function PropertyPage({ slug }: { slug: string }) {
     );
   }
 
-  const propertyImages = property.images.filter((image, index, images) => images.indexOf(image) === index);
-  const imageIndex = activeImage % propertyImages.length;
+  const propertyImages = getPropertyImages(property.images, property.featuredImage);
+  const floorPlanImages = property.floorPlanImages?.length
+    ? property.floorPlanImages
+    : property.floorPlanImage ? [property.floorPlanImage] : [];
+  const imageIndex = propertyImages.length ? activeImage % propertyImages.length : 0;
 
   return (
     <>
@@ -316,38 +345,42 @@ function PropertyPage({ slug }: { slug: string }) {
         </div>
         <div className="mt-5 grid gap-2 sm:grid-cols-[minmax(0,1.7fr)_minmax(0,1fr)]">
           <div className="relative min-h-64 overflow-hidden bg-[#f0f0f0] sm:min-h-[440px]">
-            <img src={propertyImages[imageIndex]} alt={`${property.address} property view ${imageIndex + 1}`} className="absolute inset-0 h-full w-full object-cover" />
+            {propertyImages.length > 0
+              ? <img src={propertyImages[imageIndex]} alt={`${property.address} property view ${imageIndex + 1}`} className="absolute inset-0 h-full w-full object-cover" />
+              : <div role="img" aria-label={`Photos unavailable for ${property.address}`} className="flex h-full min-h-64 items-center justify-center text-sm text-[#666] sm:min-h-[440px]">Photos unavailable</div>}
             {propertyImages.length > 1 && <>
               <button type="button" aria-label="Previous property photo" onClick={() => setActiveImage((imageIndex + propertyImages.length - 1) % propertyImages.length)} className="absolute left-3 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white/95 shadow"><ArrowLeft size={18} /></button>
               <button type="button" aria-label="Next property photo" onClick={() => setActiveImage((imageIndex + 1) % propertyImages.length)} className="absolute right-3 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white/95 shadow"><ArrowRight size={18} /></button>
             </>}
-            <span className="absolute bottom-3 right-3 bg-white/95 px-3 py-1.5 text-xs font-semibold">{imageIndex + 1} / {propertyImages.length}</span>
+            {propertyImages.length > 0 && <span className="absolute bottom-3 right-3 bg-white/95 px-3 py-1.5 text-xs font-semibold">{imageIndex + 1} / {propertyImages.length}</span>}
           </div>
           <div className="grid grid-cols-3 gap-2 sm:grid-cols-2">
             {propertyImages.slice(0, 4).map((image, index) => <button key={image} type="button" aria-label={`Show property photo ${index + 1}`} aria-pressed={imageIndex === index} onClick={() => setActiveImage(index)} className={`relative min-h-20 overflow-hidden bg-[#f0f0f0] ${index > 1 ? 'hidden sm:block' : ''} ${imageIndex === index ? 'ring-2 ring-inset ring-[#168241]' : ''}`}><img src={image} alt="" className="absolute inset-0 h-full w-full object-cover" /></button>)}
           </div>
         </div>
-        {(property.virtualTourUrl || property.floorPlanImage) && <div className="mt-4 flex flex-wrap gap-3">
+        {(property.virtualTourUrl || floorPlanImages.length > 0) && <div className="mt-4 flex flex-wrap gap-3">
           {property.virtualTourUrl && <button type="button" onClick={() => setActiveMediaView('tour')} className="min-h-11 border border-[#168241] px-5 text-sm font-semibold text-[#168241]">360° tour</button>}
-          {property.floorPlanImage && <button type="button" onClick={() => setActiveMediaView('floorPlan')} className="min-h-11 border border-[#168241] px-5 text-sm font-semibold text-[#168241]">Floor plan</button>}
+          {floorPlanImages.length > 0 && <button type="button" onClick={() => setActiveMediaView('floorPlan')} className="min-h-11 border border-[#168241] px-5 text-sm font-semibold text-[#168241]">Floor plans{floorPlanImages.length > 1 ? ` (${floorPlanImages.length})` : ''}</button>}
         </div>}
         <div className="mt-7 grid gap-8 lg:grid-cols-[minmax(0,1fr)_350px]">
           <div>
             <h2 className="text-2xl font-semibold">Home features</h2>
             <p className="mt-3 text-sm text-[#555]">{property.bedrooms} beds <span className="px-1">·</span> {property.bathrooms} baths <span className="px-1">·</span> {property.squareFeet.toLocaleString()} sqft</p>
             <ul className="mt-5 grid gap-3 border-y border-[#e2e2e2] py-5 sm:grid-cols-2">{property.amenities.map((item) => <li key={item} className="text-sm">{item}</li>)}</ul>
-            <section className="border-b border-[#e2e2e2] py-6"><h2 className="text-xl font-semibold">Home description</h2><p className="mt-3 text-sm leading-6 text-[#555]">Explore this single-family home in {property.city}, with a private yard and features for everyday living.</p></section>
-            <section className="border-b border-[#e2e2e2] py-6"><h2 className="text-xl font-semibold">Listing disclosures</h2><p className="mt-3 text-sm leading-6 text-[#555]">Review the property-specific disclosures and lease terms before applying.</p></section>
+            <section className="border-b border-[#e2e2e2] py-6"><h2 className="text-xl font-semibold">Home description</h2><p className="mt-3 text-sm leading-6 text-[#555]">{property.description || `Explore this single-family home in ${property.city}, with a private yard and features for everyday living.`}</p></section>
+            <section className="border-b border-[#e2e2e2] py-6"><h2 className="text-xl font-semibold">Listing disclosures</h2>{property.disclosures?.length ? <ul className="mt-3 space-y-2 text-sm leading-6 text-[#555]">{property.disclosures.map((disclosure) => <li key={disclosure}>{disclosure}</li>)}</ul> : <p className="mt-3 text-sm leading-6 text-[#555]">Review the property-specific disclosures and lease terms before applying.</p>}</section>
             <section className="border-b border-[#e2e2e2] py-6"><h2 className="text-xl font-semibold">Neighborhood details</h2><p className="mt-3 text-sm text-[#555]">{property.schoolDistrict ? `Nearby schools: ${property.schoolDistrict}` : `Located in ${property.city}, ${property.state}.`}</p></section>
-            <section className="border-b border-[#e2e2e2] py-6"><h2 className="text-xl font-semibold">Nearby Schools</h2><p className="mt-3 text-sm text-[#555]">{property.schoolDistrict ?? `School information for ${property.city} will be available with the listing data.`}</p></section>
+            <section className="border-b border-[#e2e2e2] py-6"><h2 className="text-xl font-semibold">Nearby Schools</h2>{property.schools?.length ? <ul className="mt-3 space-y-2 text-sm text-[#555]">{property.schools.map((school) => <li key={`${school.name}-${school.gradeLevel}`} className="flex flex-wrap justify-between gap-x-4"><span>{school.name}{school.gradeLevel ? ` (${school.gradeLevel})` : ''}</span>{school.distance != null && <span>{school.distance.toFixed(1)} mi</span>}</li>)}</ul> : <p className="mt-3 text-sm text-[#555]">{property.schoolDistrict ?? `School information for ${property.city} will be available with the listing data.`}</p>}</section>
             <section className="py-6"><h2 className="text-xl font-semibold">Before you apply</h2><a href="/before-you-apply" className="mt-3 inline-flex min-h-10 items-center gap-2 text-sm font-semibold text-[#168241]">Review requirements<ArrowRight size={15} /></a></section>
           </div>
           <aside className="h-fit border border-[#dedede] p-5">
             <p className="text-sm text-[#666]">Total monthly rent</p>
-            <p className="mt-1 text-3xl font-semibold">${property.monthlyRent.toLocaleString()}<span className="text-base font-normal">/mo</span></p>
+            <p className="mt-1 text-3xl font-semibold">${(property.totalMonthlyRent ?? property.monthlyRent).toLocaleString()}<span className="text-base font-normal">/mo</span></p>
             <p className="mt-2 text-sm text-[#555]">Available {property.availableDate}</p>
-            <div className="mt-4 border-y border-[#e2e2e2] py-3 text-sm"><div className="flex justify-between gap-3"><span>Monthly rent</span><span>${property.monthlyRent.toLocaleString()}</span></div><div className="mt-2 flex justify-between gap-3"><span>Security deposit</span><span>${property.securityDeposit.toLocaleString()}</span></div></div>
-            <a href="/how-to-apply" className="mt-5 flex min-h-12 items-center justify-center bg-[#168241] px-4 text-sm font-bold text-white hover:bg-[#0b763c]">Apply now</a>
+            <div className="mt-4 border-y border-[#e2e2e2] py-3 text-sm"><div className="flex justify-between gap-3"><span>Monthly rent</span><span>${property.monthlyRent.toLocaleString()}</span></div>{property.securityDeposit != null && <div className="mt-2 flex justify-between gap-3"><span>Security deposit</span><span>${property.securityDeposit.toLocaleString()}</span></div>}</div>
+            {property.applicationUrl
+              ? <a href={property.applicationUrl} target="_blank" rel="noopener noreferrer" className="mt-5 flex min-h-12 items-center justify-center bg-[#168241] px-4 text-sm font-bold text-white hover:bg-[#0b763c]">Apply now</a>
+              : <a href="/how-to-apply" className="mt-5 flex min-h-12 items-center justify-center bg-[#168241] px-4 text-sm font-bold text-white hover:bg-[#0b763c]">Apply now</a>}
             <button type="button" className="mt-2 min-h-12 w-full border border-[#168241] px-4 text-sm font-bold text-[#168241]">View all leasing options</button>
             <details className="mt-5 border-t border-[#e2e2e2] pt-4">
               <summary className="cursor-pointer text-sm font-semibold">Affordability Calculator</summary>
@@ -368,7 +401,7 @@ function PropertyPage({ slug }: { slug: string }) {
             </div>
             <div className="flex min-h-0 flex-1 items-center justify-center overflow-auto p-3 sm:p-6">
               {activeMediaView === 'tour' && property.virtualTourUrl && <iframe title={`${property.address} 360 degree tour`} src={property.virtualTourUrl} allow="fullscreen; accelerometer; gyroscope" allowFullScreen className="h-[70dvh] w-full border-0" />}
-              {activeMediaView === 'floorPlan' && property.floorPlanImage && <img src={property.floorPlanImage} alt={`Floor plan for ${property.address}`} className="max-h-[72dvh] max-w-full object-contain" />}
+              {activeMediaView === 'floorPlan' && <div className="grid max-h-[72dvh] w-full gap-4 overflow-auto sm:grid-cols-2">{floorPlanImages.map((image, index) => <img key={image} src={image} alt={`Floor plan ${index + 1} for ${property.address}`} className="max-h-[68dvh] w-full object-contain" />)}</div>}
             </div>
           </section>
         </div>
@@ -409,13 +442,12 @@ function ContentPage({ path }: { path: string }) {
 
 export function OfficialRentalPage({ path }: { path: string }) {
   if (path.startsWith('/search/')) {
-    const marketSlug = path.split('/').at(-1)?.replaceAll('-', ' ');
-    const marketName = path === '/search/houses-for-rent' ? undefined : marketSlug;
-    return <SearchPage marketName={marketName} />;
+    return <SearchPage />;
   }
   if (path.startsWith('/markets/houses-for-rent/')) {
-    const marketName = path.split('/').at(-1)?.replaceAll('-', ' ').replace(/\b\w/g, (character) => character.toUpperCase());
-    return <SearchPage marketName={marketName} />;
+    const marketSlug = path.split('/').at(-1) ?? '';
+    const marketName = MARKET_ROUTE_LABELS[marketSlug] ?? marketSlug.replaceAll('-', ' ').replace(/\b\w/g, (character) => character.toUpperCase());
+    return <SearchPage marketName={marketName} marketSlug={marketSlug} />;
   }
   if (path.startsWith('/houses-for-rent/')) return <PropertyPage slug={path.split('/').at(-1) ?? ''} />;
   return <ContentPage path={path} />;

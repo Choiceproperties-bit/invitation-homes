@@ -163,6 +163,7 @@ export const QuickTranspiler: React.FC = () => {
               <div className="w-full max-w-md">
                 <iframe
                   title="Snippet Preview"
+                  sandbox="allow-scripts"
                   srcDoc={`
                     <!DOCTYPE html>
                     <html>

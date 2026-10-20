@@ -1,18 +1,19 @@
 # Invitation Homes Frontend Replica
 
-An authorized frontend backup project for the Invitation Homes website. The current implementation is a Vite + React application focused on matching the public renter experience. It is not yet a production leasing or resident platform: property queries can use Supabase when configured, but no verified inventory has been loaded; Google Maps requires a restricted API key; and authentication, applications, tours, payments, and resident services are not connected.
+An authorized Vite + React backup of the public Invitation Homes renter experience. This project is not yet a production leasing or resident platform: its public listing/search slice is connected to Supabase and has a 60-listing pilot across 20 markets, while authentication, saved-home persistence, applications, scheduled/self-guided tours, payments, and resident services are not connected. See the [Project Guide](docs/PROJECT_GUIDE.md) for the architecture, data contract, sync workflow, security boundaries, and release checklist.
 
 ## Current Experience
 
 - Responsive homepage with the official navigation structure, brand assets, market directory, service information, renter guidance, and testimonials.
 - Search routes at `/search/houses-for-rent` and `/markets/houses-for-rent/:market` with location, price, bedroom, bathroom, square-footage, pet, and Smart Home filters. Queries use Supabase when configured and local fixtures otherwise.
+- Official-source inventory sync with a 60-listing pilot across all 20 public market routes (three representative listings per market).
 - URL-synchronized search filters, sort order, map/list mode, and pagination state.
 - Property detail routes at `/houses-for-rent/:slug` with a photo gallery, rent summary, listing sections, and optional property-specific 360-degree tour or floor-plan media.
 - Qualification, before-you-apply, application-process, and leasing-fees pages.
 - Google Maps integration in the search view. Without a configured key, the page displays a setup message instead of a simulated map.
 - A Playwright capture script for comparing the official and local homepages at desktop and mobile viewports.
 
-These routes are a work in progress and have not been certified for pixel-perfect parity. The current property fixtures and some informational copy are previews and must be reconciled with authorized source data before launch.
+These routes are a work in progress and have not been certified for pixel-perfect parity. The imported listings are a small live-data pilot; the local fixture set and some informational copy are previews and must not be treated as authoritative operational or legal guidance.
 
 ## Technology
 
@@ -34,7 +35,7 @@ Open [http://localhost:3000](http://localhost:3000). The server uses the `PORT` 
 
 ## Supabase Inventory Setup
 
-The initial inventory schema, RLS policies, saved-data tables, and paginated search RPC have been applied to the linked Supabase project. The migration did not seed any properties. This first backend slice supports public inventory search/detail reads only; it does not include applicant PII, resident authentication flows, payments, tour booking, or maintenance workflows.
+The initial inventory schema, RLS policies, saved-data tables, paginated search RPCs, official-source fields, and market-slug search RPC have been applied to the linked Supabase project. Public inventory search/detail reads are connected; applicant PII, resident authentication flows, payments, tour booking, and maintenance workflows are not implemented.
 
 To link another project and apply migrations, use the Supabase CLI from your own terminal:
 
@@ -44,7 +45,7 @@ npx supabase@latest link --project-ref YOUR_PROJECT_REF
 npx supabase@latest db push
 ```
 
-The login command needs a Supabase personal access token; linking or pushing may require the database password. Enter those only in terminal/dashboard prompts. Never paste them into chat, commit them, or put them in Vite variables. The migration is [`supabase/migrations/20261020000000_initial_rental_backend.sql`](supabase/migrations/20261020000000_initial_rental_backend.sql).
+The login command needs a Supabase personal access token; linking or pushing may require the database password. Enter those only in terminal/dashboard prompts. Never paste them into chat, commit them, or put them in Vite variables. See the [migration list](docs/PROJECT_GUIDE.md#database-migrations) for the three applied migrations.
 
 Set the project URL and public anon/publishable key in local `.env` or the hosting environment:
 
@@ -53,9 +54,18 @@ VITE_SUPABASE_URL=https://your-project.supabase.co
 VITE_SUPABASE_ANON_KEY=your-public-anon-or-publishable-key
 ```
 
-This workspace does not have those local variables configured, so local development still uses sample fixtures. Import only authorized, verified inventory into `public.properties`; records default to `published = false`, and search stays empty until approved records are loaded. Never put a Supabase service-role key in a `VITE_` variable or browser bundle. RLS limits public reads to published listings and authenticated saved rows to their owner. Saved-property and saved-search tables exist, but the UI does not persist to them yet.
+This workspace does not keep local Supabase variables in a committed file. Configure `VITE_SUPABASE_URL` and the browser-safe anon/publishable key in an ignored local environment file or hosting settings to use the hosted pilot. Without them the app uses clearly labeled local sample fixtures. Never put a Supabase service-role key in a `VITE_` variable or browser bundle. RLS exposes published eligible homes and scopes saved rows to the authenticated owner. Saved tables exist, but saved-home/search UI persistence is not implemented.
 
-When the Supabase variables are absent, the app uses local sample fixtures. When configured against an empty project, the inventory is empty until records are imported. Do not put a Supabase service-role key in a `VITE_` variable or the browser bundle. The migration uses RLS to expose only published homes and to restrict saved rows to their authenticated owner; the UI for persisting saved homes/searches is not implemented yet.
+### Authorized Inventory Sync
+
+The sync reads the authorized official public property search/detail endpoints, checks market counts and source IDs, and excludes self-show URLs, access codes, and contact records. The linked project currently has 60 representative listings (three per each of 20 markets); 58 have photos, and all 60 have fees, lease terms, and school records. The command defaults to three representative listings per market and dry-run mode:
+
+```bash
+npm run sync:official-inventory -- --limit-per-market=3
+npm run sync:official-inventory -- --limit-per-market=3 --apply
+```
+
+Use `--market=atlanta-georgia` to limit a run to one market. `--all --apply` is an explicit full-catalog import; review a complete dry run first. Source availability changes continuously, so the sync reports count differences and refuses material gaps. Imported image files are not copied into Supabase; only public image URLs are stored.
 
 ### Google Maps
 
@@ -68,15 +78,24 @@ VITE_GOOGLE_MAP_ID=your-map-id
 
 Do not commit API keys. `VITE_` values are included in browser code, so restrict the key to approved application origins and only the required Maps APIs. The map ID is optional; the component uses Google's demo map ID when none is provided.
 
+### ImageKit Remote-Origin Delivery
+
+The app can generate ImageKit transformation URLs for the official image origin without uploading duplicate image files. Configure `VITE_IMAGEKIT_URL_ENDPOINT` (for example, `https://ik.imagekit.io/YOUR_IMAGEKIT_ID`) and set up that origin as an ImageKit remote source. Optionally set `VITE_IMAGEKIT_SOURCE_ORIGIN`; it defaults to `https://images.invitationhomes.com`. The endpoint is not configured in this workspace, so images currently load directly from the official CDN. Remote-origin transformation avoids storing image binaries in Supabase, but does not reduce storage used by the original image host. If ImageKit storage/uploads are desired instead, implement that separately with a server-side private key; never expose it in a `VITE_` variable.
+
 ## Validation and Capture
 
 ```bash
 npm run lint
 npm run build
+npm test
 npm run visual:capture
 ```
 
 The capture script writes screenshots and a JSON report to `.artifacts/visual-parity/`, which is git-ignored. It captures the official and local homepages at 1440x900 and 390x844, and checks rendering, browser errors, image failures, and horizontal overflow. Install Playwright's browser first with `npx playwright install chromium`. On Linux systems missing browser libraries, `npx playwright install-deps chromium` requires system package installation privileges.
+
+`npm run test:supabase` runs search/RLS integration checks against the linked Supabase project. It requires an authenticated Supabase CLI and uses unique temporary listing rows inside a transaction that is rolled back. Prefer a staging project for this check.
+
+For repository orientation, data flow, migration history, sync semantics, security boundaries, and remaining production work, read the [Project Guide](docs/PROJECT_GUIDE.md).
 
 ## Deploy a Preview to Cloudflare Pages
 
@@ -102,15 +121,17 @@ The app uses client-side routes. Cloudflare Pages serves the SPA entry point for
 
 Pages serves the static Vite output only. The local Express endpoints (`/api/clone` and `/api/transpile`) are not deployed by these settings. The active rental frontend does not depend on them, but any future feature that needs those endpoints must be moved to Pages Functions/Workers or a separately hosted API. Do not expose the URL-fetching clone endpoint publicly without SSRF protections, destination validation, request limits, and access controls.
 
+The Express server registers these endpoints only outside production when `ENABLE_CLONER_API=true`. This is a development-only opt-in, not an SSRF defense; do not enable it for untrusted traffic.
+
 ## Production Status and Security Notes
 
-The current frontend is not ready to serve as the live leasing backup. Before deployment, connect an authorized inventory source and the required operational services, implement error/loading states for those integrations, and complete desktop/mobile visual and accessibility reviews.
+The current frontend is not ready to serve as the live leasing backup. The public listing source is connected for a 60-home pilot; before operational use, expand and monitor the sync, configure the public Supabase client and Google Maps key, complete ImageKit setup if desired, implement or link authorized renter/resident services, and finish desktop/mobile visual and accessibility review.
 
 The Express server also contains development cloner endpoints, including `/api/clone`, which fetches a caller-provided URL. Do not expose this endpoint publicly until it has strict destination validation, SSRF protections, request limits, and appropriate access controls; remove or disable it from the production service if the cloner is not needed.
 
 ## Backend Status
 
-The initial Supabase schema, RLS policies, search RPC, browser client, and inventory repository are implemented. The migration is applied to the linked hosted project, but no inventory is seeded and this workspace has no local Supabase URL/key. Next backend work is to import verified inventory and implement authenticated saved homes/searches. Screening, applications, e-signatures, payments, maintenance dispatch, and smart-lock access require authorized provider APIs and appropriate security controls; Supabase by itself does not supply those services.
+The Supabase schema, RLS policies, versioned search RPCs, browser client, inventory repository, and official-source sync are implemented. Four migrations are applied to the linked hosted project, which currently contains 60 source-managed pilot listings across 20 markets. Next backend work is to decide whether to expand the import, configure ImageKit, implement authenticated saved homes/searches, and connect approved application/tour/resident providers. Screening, e-signatures, payments, maintenance dispatch, and smart-lock access require authorized provider APIs and security controls; Supabase by itself does not supply those services.
 
 ## Authorization and License
 

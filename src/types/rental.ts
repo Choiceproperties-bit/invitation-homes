@@ -1,5 +1,9 @@
 export interface PropertyListing {
   id: string;
+  databaseId?: string;
+  sourceId?: string;
+  sourceMarketSlug?: string;
+  sourceStatus?: string;
   title: string;
   address: string;
   city: string;
@@ -7,7 +11,17 @@ export interface PropertyListing {
   zipCode: string;
   market: string;
   monthlyRent: number;
-  securityDeposit: number;
+  securityDeposit: number | null;
+  totalMonthlyRent?: number;
+  description?: string;
+  fees?: { name: string; title: string; description: string; amount: number; required: boolean; frequency: string }[];
+  leaseTerms?: { term: number; rent: number; totalMonthlyRent: number; optimal: boolean }[];
+  floorPlanImages?: string[];
+  schools?: { name: string; distance: number | null; gradeLevel: string | null }[];
+  disclosures?: string[];
+  applicationUrl?: string;
+  propertyType?: string;
+  hasPool?: boolean;
   bedrooms: number;
   bathrooms: number;
   squareFeet: number;

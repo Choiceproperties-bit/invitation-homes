@@ -1,8 +1,14 @@
 import { SAMPLE_PROPERTIES } from '../data/properties';
 import { PropertyListing } from '../types/rental';
 import { supabaseClient } from '../lib/supabaseClient';
+import { getImageDeliveryUrl, getPropertyImages } from '../lib/propertyImages';
 
 interface PropertyRecord {
+  id?: string;
+  property_id?: string;
+  source_id?: string | null;
+  source_market_slug?: string | null;
+  source_status?: string | null;
   slug: string;
   title: string;
   address: string;
@@ -11,12 +17,12 @@ interface PropertyRecord {
   zip_code: string;
   market: string;
   monthly_rent: number;
-  security_deposit: number;
+  security_deposit: number | null;
   bedrooms: number;
   bathrooms: number;
   square_feet: number;
   available_date: string | null;
-  status: PropertyListing['status'];
+  status: string;
   pet_friendly: boolean;
   pet_details: string;
   smart_home: boolean;
@@ -31,11 +37,22 @@ interface PropertyRecord {
   year_built: number | null;
   parking_spaces: number | null;
   school_district: string | null;
+  total_monthly_rent?: number | null;
+  description?: string | null;
+  fees?: { name: string; title: string; description: string; fee_amount: string | number; is_required: boolean; frequency: string }[] | null;
+  lease_terms?: { term: number; rent: string | number; total_monthly_rent: string | number; is_optimal_term: boolean }[] | null;
+  floor_plan_images?: string[] | null;
+  schools?: { name: string; distance: number | null; grade_level_description: string | null }[] | null;
+  disclosures?: string[] | null;
+  application_url?: string | null;
+  property_type?: string | null;
+  has_pool?: boolean | null;
   total_count?: number;
 }
 
 export interface ListingSearchParams {
   query: string;
+  marketSlug?: string;
   minPrice: string;
   maxPrice: string;
   bedrooms: string;
@@ -54,9 +71,20 @@ export interface ListingSearchResult {
   totalCount: number;
 }
 
-function mapProperty(record: PropertyRecord): PropertyListing {
+function mapListingStatus(status: string): PropertyListing['status'] {
+  if (status === 'available' || status === 'Vacant Unrented Ready') return 'available';
+  if (status === 'coming_soon' || status === 'Vacant Unrented Not Ready') return 'coming_soon';
+  if (status === 'leased') return 'leased';
+  return 'pending';
+}
+
+export function mapProperty(record: PropertyRecord): PropertyListing {
   return {
     id: record.slug,
+    databaseId: record.property_id ?? record.id,
+    sourceId: record.source_id ?? undefined,
+    sourceMarketSlug: record.source_market_slug ?? undefined,
+    sourceStatus: record.source_status ?? undefined,
     title: record.title,
     address: record.address,
     city: record.city,
@@ -64,21 +92,47 @@ function mapProperty(record: PropertyRecord): PropertyListing {
     zipCode: record.zip_code,
     market: record.market,
     monthlyRent: Number(record.monthly_rent),
-    securityDeposit: Number(record.security_deposit),
+    securityDeposit: record.security_deposit == null ? null : Number(record.security_deposit),
+    totalMonthlyRent: record.total_monthly_rent == null ? undefined : Number(record.total_monthly_rent),
+    description: record.description ?? undefined,
+    fees: record.fees?.map((fee) => ({
+      name: fee.name,
+      title: fee.title,
+      description: fee.description,
+      amount: Number(fee.fee_amount),
+      required: fee.is_required,
+      frequency: fee.frequency
+    })),
+    leaseTerms: record.lease_terms?.map((term) => ({
+      term: term.term,
+      rent: Number(term.rent),
+      totalMonthlyRent: Number(term.total_monthly_rent),
+      optimal: term.is_optimal_term
+    })),
+    floorPlanImages: record.floor_plan_images?.map(getImageDeliveryUrl),
+    schools: record.schools?.map((school) => ({
+      name: school.name,
+      distance: school.distance,
+      gradeLevel: school.grade_level_description
+    })),
+    disclosures: record.disclosures ?? undefined,
+    applicationUrl: record.application_url ?? undefined,
+    propertyType: record.property_type ?? undefined,
+    hasPool: record.has_pool ?? undefined,
     bedrooms: record.bedrooms,
     bathrooms: Number(record.bathrooms),
     squareFeet: record.square_feet,
     availableDate: record.available_date ?? 'Contact for availability',
-    status: record.status,
+    status: mapListingStatus(record.status),
     petFriendly: record.pet_friendly,
     petDetails: record.pet_details,
     smartHome: record.smart_home,
     smartHomeFeatures: record.smart_home_features,
     amenities: record.amenities,
-    images: record.images,
-    featuredImage: record.featured_image,
+    images: getPropertyImages(record.images, record.featured_image),
+    featuredImage: getImageDeliveryUrl(record.featured_image),
     virtualTourUrl: record.virtual_tour_url ?? undefined,
-    floorPlanImage: record.floor_plan_image ?? undefined,
+    floorPlanImage: record.floor_plan_image ? getImageDeliveryUrl(record.floor_plan_image) : undefined,
     coordinates: { lat: record.latitude, lng: record.longitude },
     yearBuilt: record.year_built ?? undefined,
     parkingSpaces: record.parking_spaces ?? undefined,
@@ -110,8 +164,9 @@ function searchFixtureListings(params: ListingSearchParams): ListingSearchResult
 export async function searchPropertyListings(params: ListingSearchParams): Promise<ListingSearchResult> {
   if (!supabaseClient) return searchFixtureListings(params);
 
-  const { data, error } = await supabaseClient.rpc('search_public_properties', {
+  const { data, error } = await supabaseClient.rpc('search_public_properties_v3', {
     p_query: params.query.trim() || null,
+    p_market_slug: params.marketSlug ?? null,
     p_min_price: params.minPrice ? Number(params.minPrice) : null,
     p_max_price: params.maxPrice ? Number(params.maxPrice) : null,
     p_bedrooms: params.bedrooms === 'any' ? null : Number(params.bedrooms),
