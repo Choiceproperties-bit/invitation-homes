@@ -1,11 +1,11 @@
 # Invitation Homes Frontend Replica
 
-An authorized frontend backup project for the Invitation Homes website. The current implementation is a Vite + React application focused on matching the public renter experience. It is a frontend preview, not a production leasing or resident platform: inventory is fixture-backed, Google Maps requires a restricted API key, and authentication, applications, tours, payments, and resident services are not connected.
+An authorized frontend backup project for the Invitation Homes website. The current implementation is a Vite + React application focused on matching the public renter experience. It is not yet a production leasing or resident platform: property queries can use Supabase when configured, but no verified inventory has been loaded; Google Maps requires a restricted API key; and authentication, applications, tours, payments, and resident services are not connected.
 
 ## Current Experience
 
 - Responsive homepage with the official navigation structure, brand assets, market directory, service information, renter guidance, and testimonials.
-- Search routes at `/search/houses-for-rent` and `/markets/houses-for-rent/:market` with fixture-based location, price, bedroom, bathroom, square-footage, pet, and Smart Home filters.
+- Search routes at `/search/houses-for-rent` and `/markets/houses-for-rent/:market` with location, price, bedroom, bathroom, square-footage, pet, and Smart Home filters. Queries use Supabase when configured and local fixtures otherwise.
 - URL-synchronized search filters, sort order, map/list mode, and pagination state.
 - Property detail routes at `/houses-for-rent/:slug` with a photo gallery, rent summary, listing sections, and optional property-specific 360-degree tour or floor-plan media.
 - Qualification, before-you-apply, application-process, and leasing-fees pages.
@@ -18,6 +18,7 @@ These routes are a work in progress and have not been certified for pixel-perfec
 
 - React 19, TypeScript, Vite, and Tailwind CSS v4.
 - Express server with Vite middleware in development and static-file serving in production.
+- Supabase JS client and a Postgres migration for published property inventory, a paginated search RPC, and RLS-protected saved-property/search tables.
 - Google Maps React components and marker clustering.
 - Playwright for browser-based visual capture and interaction checks.
 - Cheerio and JSZip remain in the repository for the separate cloner/transpiler tooling; those tools are not mounted in the active official-site application shell.
@@ -30,6 +31,31 @@ npm run dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000). The server uses the `PORT` environment variable when set.
+
+## Supabase Inventory Setup
+
+The initial inventory schema, RLS policies, saved-data tables, and paginated search RPC have been applied to the linked Supabase project. The migration did not seed any properties. This first backend slice supports public inventory search/detail reads only; it does not include applicant PII, resident authentication flows, payments, tour booking, or maintenance workflows.
+
+To link another project and apply migrations, use the Supabase CLI from your own terminal:
+
+```bash
+npx supabase@latest login
+npx supabase@latest link --project-ref YOUR_PROJECT_REF
+npx supabase@latest db push
+```
+
+The login command needs a Supabase personal access token; linking or pushing may require the database password. Enter those only in terminal/dashboard prompts. Never paste them into chat, commit them, or put them in Vite variables. The migration is [`supabase/migrations/20261020000000_initial_rental_backend.sql`](supabase/migrations/20261020000000_initial_rental_backend.sql).
+
+Set the project URL and public anon/publishable key in local `.env` or the hosting environment:
+
+```bash
+VITE_SUPABASE_URL=https://your-project.supabase.co
+VITE_SUPABASE_ANON_KEY=your-public-anon-or-publishable-key
+```
+
+This workspace does not have those local variables configured, so local development still uses sample fixtures. Import only authorized, verified inventory into `public.properties`; records default to `published = false`, and search stays empty until approved records are loaded. Never put a Supabase service-role key in a `VITE_` variable or browser bundle. RLS limits public reads to published listings and authenticated saved rows to their owner. Saved-property and saved-search tables exist, but the UI does not persist to them yet.
+
+When the Supabase variables are absent, the app uses local sample fixtures. When configured against an empty project, the inventory is empty until records are imported. Do not put a Supabase service-role key in a `VITE_` variable or the browser bundle. The migration uses RLS to expose only published homes and to restrict saved rows to their authenticated owner; the UI for persisting saved homes/searches is not implemented yet.
 
 ### Google Maps
 
@@ -82,9 +108,9 @@ The current frontend is not ready to serve as the live leasing backup. Before de
 
 The Express server also contains development cloner endpoints, including `/api/clone`, which fetches a caller-provided URL. Do not expose this endpoint publicly until it has strict destination validation, SSRF protections, request limits, and appropriate access controls; remove or disable it from the production service if the cloner is not needed.
 
-## Backend Direction
+## Backend Status
 
-Supabase is the preferred future backend for application-owned data and authentication. Inventory, screening, applications, e-signatures, payments, maintenance dispatch, and smart-lock access will also require authorized provider APIs and appropriate security controls; Supabase by itself does not supply those services.
+The initial Supabase schema, RLS policies, search RPC, browser client, and inventory repository are implemented. The migration is applied to the linked hosted project, but no inventory is seeded and this workspace has no local Supabase URL/key. Next backend work is to import verified inventory and implement authenticated saved homes/searches. Screening, applications, e-signatures, payments, maintenance dispatch, and smart-lock access require authorized provider APIs and appropriate security controls; Supabase by itself does not supply those services.
 
 ## Authorization and License
 
