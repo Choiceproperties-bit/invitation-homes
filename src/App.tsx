@@ -1,10 +1,15 @@
 import React from 'react';
-import { InvitationHomesApp } from './components/InvitationHomesApp';
+import { OfficialHomepage } from './components/OfficialHomepage';
+import { OfficialRentalPage } from './components/OfficialRentalPages';
 
 export default function App() {
+  const path = window.location.pathname;
+
+  if (path !== '/') {
+    return <OfficialRentalPage path={path} />;
+  }
+
   return (
-    <div className="min-h-screen bg-white">
-      <InvitationHomesApp />
-    </div>
+    <OfficialHomepage />
   );
 }

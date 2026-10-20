@@ -1,72 +1,67 @@
-# Invitation Homes Cloner & Zero-AI Web Inspector
+# Invitation Homes Frontend Replica
 
-> A high-fidelity, production-grade reverse-engineered clone of **Invitation Homes** (`https://www.invitationhomes.com/`) built with React 19, Next.js, and Tailwind CSS v4. Features a built-in **Zero-AI Deterministic Cloner & AST Transpiler Engine** that extracts HTML sections, design tokens, color palettes, and assets without requiring external AI APIs or subscriptions.
+An authorized frontend backup project for the Invitation Homes website. The current implementation is a Vite + React application focused on matching the public renter experience. It is a frontend preview, not a production leasing or resident platform: inventory is fixture-backed, Google Maps requires a restricted API key, and authentication, applications, tours, payments, and resident services are not connected.
 
----
+## Current Experience
 
-## 🌟 Key Features
+- Responsive homepage with the official navigation structure, brand assets, market directory, service information, renter guidance, and testimonials.
+- Search routes at `/search/houses-for-rent` and `/markets/houses-for-rent/:market` with fixture-based location, price, bedroom, bathroom, square-footage, pet, and Smart Home filters.
+- URL-synchronized search filters, sort order, map/list mode, and pagination state.
+- Property detail routes at `/houses-for-rent/:slug` with a photo gallery, rent summary, listing sections, and optional property-specific 360-degree tour or floor-plan media.
+- Qualification, before-you-apply, application-process, and leasing-fees pages.
+- Google Maps integration in the search view. Without a configured key, the page displays a setup message instead of a simulated map.
+- A Playwright capture script for comparing the official and local homepages at desktop and mobile viewports.
 
-- **Houses for Rent \| Invitation Homes Replica**:
-  - Interactive Location Search by city, state, or zip code.
-  - Bedrooms & Maximum Price Filtering.
-  - 4 Interactive Value Pillars (*More value, More simplicity, More flexibility, More Genuine CARE™*) with live Contentful CDN photography.
-  - 16 Premier US Metro Markets directory (*Atlanta, Austin, Dallas-Fort Worth, Phoenix, etc.*).
-  - ProCare maintenance and Smart Home feature highlights.
-- **Side-by-Side Fidelity Split View**:
-  - Direct live comparison between the React 19 clone and the original `invitationhomes.com` website.
-- **Accuracy & Parity Audit**:
-  - Dimension-by-dimension breakdown of visual layout, typography, interactivity, and backend architecture limitations.
-- **Zero-AI Cloner Studio**:
-  - Scrapes public URLs or arbitrary HTML using a deterministic AST parser (Cheerio + regex).
-  - Decomposes layouts into modular `.tsx` components (`Navbar.tsx`, `Hero.tsx`, `Pillars.tsx`, `Footer.tsx`).
-  - Generates custom `tailwind.config.js` with detected brand color palettes and typography.
-  - 1-click **Export Project ZIP** bundle.
-- **HTML → React 19 Transpiler**:
-  - Paste any DOM snippet directly from Chrome DevTools (*Inspect Element > Copy outerHTML*) to transpile instantly into clean JSX with self-closing tags and converted style attributes.
+These routes are a work in progress and have not been certified for pixel-perfect parity. The current property fixtures and some informational copy are previews and must be reconciled with authorized source data before launch.
 
----
+## Technology
 
-## 🛠️ Tech Stack
+- React 19, TypeScript, Vite, and Tailwind CSS v4.
+- Express server with Vite middleware in development and static-file serving in production.
+- Google Maps React components and marker clustering.
+- Playwright for browser-based visual capture and interaction checks.
+- Cheerio and JSZip remain in the repository for the separate cloner/transpiler tooling; those tools are not mounted in the active official-site application shell.
 
-- **Frontend**: React 19, TypeScript, Tailwind CSS v4, Lucide React
-- **Backend / Engine**: Express, Vite middleware, Cheerio DOM parser
-- **Archival & Export**: JSZip
-
----
-
-## 🚀 Getting Started
-
-### 1. Installation
+## Local Development
 
 ```bash
-git clone https://github.com/choice121/invitation-homes-cloner.git
-cd invitation-homes-cloner
-npm install
-```
-
-### 2. Development
-
-```bash
+npm ci
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) in your browser.
+Open [http://localhost:3000](http://localhost:3000). The server uses the `PORT` environment variable when set.
 
-### 3. Production Build
+### Google Maps
+
+Set a browser-restricted Google Maps key in the local environment to enable map tiles and markers:
 
 ```bash
-npm run build
-npm start
+VITE_GOOGLE_MAPS_API_KEY=your-restricted-key
+VITE_GOOGLE_MAP_ID=your-map-id
 ```
 
----
+Do not commit API keys. `VITE_` values are included in browser code, so restrict the key to approved application origins and only the required Maps APIs. The map ID is optional; the component uses Google's demo map ID when none is provided.
 
-## ⚖️ Legal & Ethical Notice
+## Validation and Capture
 
-This codebase is provided strictly for educational purposes, architecture evaluation, and frontend reverse-engineering studies. Trademarks, brand names, and logos belong to their respective owners (Invitation Homes Inc.).
+```bash
+npm run lint
+npm run build
+npm run visual:capture
+```
 
----
+The capture script writes screenshots and a JSON report to `.artifacts/visual-parity/`, which is git-ignored. It captures the official and local homepages at 1440x900 and 390x844, and checks rendering, browser errors, image failures, and horizontal overflow. Install Playwright's browser first with `npx playwright install chromium`. On Linux systems missing browser libraries, `npx playwright install-deps chromium` requires system package installation privileges.
 
-## 📄 License
+## Production Status and Security Notes
 
-MIT License
+The current frontend is not ready to serve as the live leasing backup. Before deployment, connect an authorized inventory source and the required operational services, implement error/loading states for those integrations, and complete desktop/mobile visual and accessibility reviews.
+
+The Express server also contains development cloner endpoints, including `/api/clone`, which fetches a caller-provided URL. Do not expose this endpoint publicly until it has strict destination validation, SSRF protections, request limits, and appropriate access controls; remove or disable it from the production service if the cloner is not needed.
+
+## Backend Direction
+
+Supabase is the preferred future backend for application-owned data and authentication. Inventory, screening, applications, e-signatures, payments, maintenance dispatch, and smart-lock access will also require authorized provider APIs and appropriate security controls; Supabase by itself does not supply those services.
+
+## Authorization and License
+
+This project is maintained as an authorized Invitation Homes backup frontend. Use of the Invitation Homes name, marks, copy, and assets must remain within the authorization granted for this project. The repository license is MIT; that license does not grant rights to third-party marks or content beyond the applicable authorization.

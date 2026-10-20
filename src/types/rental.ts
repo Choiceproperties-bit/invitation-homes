@@ -20,6 +20,8 @@ export interface PropertyListing {
   amenities: string[];
   images: string[];
   featuredImage: string;
+  virtualTourUrl?: string;
+  floorPlanImage?: string;
   coordinates: {
     lat: number;
     lng: number;
