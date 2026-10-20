@@ -52,6 +52,30 @@ npm run visual:capture
 
 The capture script writes screenshots and a JSON report to `.artifacts/visual-parity/`, which is git-ignored. It captures the official and local homepages at 1440x900 and 390x844, and checks rendering, browser errors, image failures, and horizontal overflow. Install Playwright's browser first with `npx playwright install chromium`. On Linux systems missing browser libraries, `npx playwright install-deps chromium` requires system package installation privileges.
 
+## Deploy a Preview to Cloudflare Pages
+
+Cloudflare Pages can host the built frontend as a static site. This does not deploy the Express server or create a production leasing backend.
+
+1. In the Cloudflare dashboard, open **Workers & Pages**, create a Pages application, and connect this GitHub repository.
+2. Select `main` as the production branch and use these build settings:
+
+	| Setting | Value |
+	| --- | --- |
+	| Framework preset | Vite |
+	| Build command | `npm run build` |
+	| Build output directory | `dist` |
+	| Root directory | Repository root (leave the default) |
+
+3. Set the build environment to Node.js 22 or newer (Vite 8 requires Node.js 20.19+ or 22.12+).
+4. In the Pages project settings, add `VITE_GOOGLE_MAPS_API_KEY` and, optionally, `VITE_GOOGLE_MAP_ID` for both Preview and Production environments. Restrict the key to the approved Pages preview and production origins, and allow only the required Google Maps APIs. A `VITE_` value is public in the generated browser bundle; never use it for a secret.
+5. Save the settings and trigger a deployment. Cloudflare builds the selected branch and publishes `dist`; use the generated `*.pages.dev` URL to review the preview. Add a custom domain only after the preview and authorization settings are verified.
+
+The app uses client-side routes. Cloudflare Pages serves the SPA entry point for routes when no `404.html` is present; verify direct loads of `/search/houses-for-rent`, `/qualify`, and a property route on the deployed preview.
+
+### Cloudflare Pages Runtime Boundary
+
+Pages serves the static Vite output only. The local Express endpoints (`/api/clone` and `/api/transpile`) are not deployed by these settings. The active rental frontend does not depend on them, but any future feature that needs those endpoints must be moved to Pages Functions/Workers or a separately hosted API. Do not expose the URL-fetching clone endpoint publicly without SSRF protections, destination validation, request limits, and access controls.
+
 ## Production Status and Security Notes
 
 The current frontend is not ready to serve as the live leasing backup. Before deployment, connect an authorized inventory source and the required operational services, implement error/loading states for those integrations, and complete desktop/mobile visual and accessibility reviews.
