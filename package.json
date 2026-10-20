@@ -9,7 +9,7 @@
     "preview": "vite preview",
     "clean": "rm -rf dist server.js",
     "lint": "tsc --noEmit",
-    "test": "tsx --test src/services/propertyRepository.test.ts",
+    "test": "tsx --test src/services/*.test.ts",
     "test:supabase": "node scripts/test-supabase.mjs",
     "sync:official-inventory": "node scripts/sync-official-inventory.mjs",
     "visual:capture": "node scripts/capture-visual-parity.mjs",

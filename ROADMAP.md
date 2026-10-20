@@ -2,13 +2,16 @@
 
 Status date: 2026-10-20
 
+For the current done/local-only/blocked/not-started matrix, see [docs/IMPLEMENTATION_STATUS.md](docs/IMPLEMENTATION_STATUS.md).
+
 ## Status Summary
 
 The authorized Vite/React backup has a working public listing/search integration and a **60-listing pilot across 20 markets** in the linked Supabase project. The sync is repeatable and defaults to a dry-run sample. This is a development pilot, not the full property catalog and not a production leasing/resident platform.
 
-Search, market routes, property details, renter guides, public inventory RLS, and the market-aware search RPC are implemented. The original public application handoff is linked when available. Authentication, saved-home persistence, application submission/status, self-tour scheduling, payments, screening, and resident service workflows remain unconnected.
+Search, market routes, property details, renter guides, public inventory RLS, and the market-aware search RPC are implemented. The official application handoff remains available. A browser-local `/tenant-workflow` now covers the full renter/resident sequence, but authentication, server-backed application/status, provider screening, payments, e-signature, notifications, tours, and resident services are not connected.
 
 For repository structure, exact sync behavior, configuration, data fields, migrations, security boundaries, and commands, see [docs/PROJECT_GUIDE.md](docs/PROJECT_GUIDE.md).
+The tenant lifecycle, holding-fee controls, notification catalog, and proposed leasing implementation order are documented in [docs/TENANT_LEASING_WORKFLOW.md](docs/TENANT_LEASING_WORKFLOW.md).
 
 ## Implemented and Verified
 
@@ -47,6 +50,8 @@ For repository structure, exact sync behavior, configuration, data fields, migra
 
 ### 3. Implement Renter and Resident Workflows
 
+- Review the local-only leasing foundation migration and workflow document; they are scaffolding and have not been applied to the linked hosted project.
+- The `/tenant-workflow` UI exercises application through move-out locally; build authenticated APIs and provider callbacks before treating its state as operational.
 - Add authenticated saved homes and searches using existing RLS tables; map public slugs to database UUIDs.
 - Keep applications, applicant PII, payments, screening, e-signature, tour booking, resident maintenance, and smart-lock functions in separate approved provider integrations.
 - Before storing sensitive user data, define schemas, RLS/policies, consent, retention, audit logging, incident response, and applicable legal/fair-housing controls.
@@ -61,12 +66,14 @@ For repository structure, exact sync behavior, configuration, data fields, migra
 
 ## Database Migrations
 
-All four migrations below are applied to the currently linked Supabase project:
+The first four migrations below are applied to the currently linked Supabase project. Migrations 5 and 6 are local-only and have not been applied:
 
 1. `20261020000000_initial_rental_backend.sql` creates property inventory, saved-data tables, RLS, grants, and the original search RPC.
 2. `20261020000001_add_property_uuid_to_search.sql` adds the UUID-aware v2 search RPC.
 3. `20261020000002_add_official_inventory_fields.sql` adds source identity/details and expands the property data returned to the app.
 4. `20261020000003_add_market_slug_search.sql` adds market-slug filtering used by market routes.
+5. `20261020000004_add_leasing_workflow_foundation.sql` adds private leasing, holds, payment ledger, resident service request, and notification-outbox tables. It does not implement provider integrations or tenant/staff APIs.
+6. `20261020000005_add_screening_deposits_lease_workflows.sql` adds approved policy versioning, screening cases/notices, holding-payment allocations, security-deposit disposition, lease documents, and lease events.
 
 Run `npx supabase@latest migration list --linked` to compare local and remote migration history. Preview changes with `npx supabase@latest db push --linked --dry-run` before applying a migration.
 

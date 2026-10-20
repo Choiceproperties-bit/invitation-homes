@@ -1,6 +1,6 @@
 # Invitation Homes Frontend Replica
 
-An authorized Vite + React backup of the public Invitation Homes renter experience. This project is not yet a production leasing or resident platform: its public listing/search slice is connected to Supabase and has a 60-listing pilot across 20 markets, while authentication, saved-home persistence, applications, scheduled/self-guided tours, payments, and resident services are not connected. See the [Project Guide](docs/PROJECT_GUIDE.md) for the architecture, data contract, sync workflow, security boundaries, and release checklist.
+An authorized Vite + React backup of the public Invitation Homes renter experience. This project is not yet a production leasing or resident platform: its public listing/search slice is connected to Supabase and has a 60-listing pilot across 20 markets, while authentication, saved-home persistence, applications, scheduled/self-guided tours, payments, and resident services are not connected. See [Implementation Status](docs/IMPLEMENTATION_STATUS.md) for what is done, local-only, blocked, or not started; see the [Project Guide](docs/PROJECT_GUIDE.md) for architecture, data, sync, and security details.
 
 ## Current Experience
 
@@ -10,6 +10,8 @@ An authorized Vite + React backup of the public Invitation Homes renter experien
 - URL-synchronized search filters, sort order, map/list mode, and pagination state.
 - Property detail routes at `/houses-for-rent/:slug` with a photo gallery, rent summary, listing sections, and optional property-specific 360-degree tour or floor-plan media.
 - Qualification, before-you-apply, application-process, and leasing-fees pages.
+- A tenant workflow at `/tenant-workflow` covering application, screening state, holding terms, lease review, security deposit, move-in, maintenance, renewal, move-out, deposit disposition, and an in-app activity timeline. The browser-local workflow is not server-backed: it does not submit operational applications, run screening, reserve homes, move funds, execute legal documents, create work orders, or send notices.
+- 38 versioned transactional email templates with plain-text and HTML renderers in `src/services/emailTemplates.ts`. Sensitive legal/incident templates require approved content, and no email provider or delivery worker is connected.
 - Google Maps integration in the search view. Without a configured key, the page displays a setup message instead of a simulated map.
 - A Playwright capture script for comparing the official and local homepages at desktop and mobile viewports.
 

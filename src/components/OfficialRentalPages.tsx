@@ -8,6 +8,7 @@ import { GoogleRentalMap } from './GoogleRentalMap';
 import { getPropertyBySlug, searchPropertyListings } from '../services/propertyRepository';
 import { isSupabaseConfigured } from '../lib/supabaseClient';
 import { getPropertyImages } from '../lib/propertyImages';
+import { TenantWorkflowPortal } from './TenantWorkflowPortal';
 
 const contentPages: Record<string, { title: string; intro: string; links: [string, string][] }> = {
   '/communities/': { title: 'Rental communities', intro: 'Explore newly built single-family rental homes in select communities.', links: [['Find homes for rent', '/search/houses-for-rent'], ['Before you apply', '/before-you-apply']] },
@@ -381,6 +382,7 @@ function PropertyPage({ slug }: { slug: string }) {
             {property.applicationUrl
               ? <a href={property.applicationUrl} target="_blank" rel="noopener noreferrer" className="mt-5 flex min-h-12 items-center justify-center bg-[#168241] px-4 text-sm font-bold text-white hover:bg-[#0b763c]">Apply now</a>
               : <a href="/how-to-apply" className="mt-5 flex min-h-12 items-center justify-center bg-[#168241] px-4 text-sm font-bold text-white hover:bg-[#0b763c]">Apply now</a>}
+            <a href={`/tenant-workflow?property=${encodeURIComponent(property.id)}`} className="mt-2 flex min-h-11 items-center justify-center border border-[#168241] px-4 text-sm font-semibold text-[#168241]">Continue to tenant workflow</a>
             <button type="button" className="mt-2 min-h-12 w-full border border-[#168241] px-4 text-sm font-bold text-[#168241]">View all leasing options</button>
             <details className="mt-5 border-t border-[#e2e2e2] pt-4">
               <summary className="cursor-pointer text-sm font-semibold">Affordability Calculator</summary>
@@ -441,6 +443,7 @@ function ContentPage({ path }: { path: string }) {
 }
 
 export function OfficialRentalPage({ path }: { path: string }) {
+  if (path === '/tenant-workflow') return <TenantWorkflowPortal />;
   if (path.startsWith('/search/')) {
     return <SearchPage />;
   }

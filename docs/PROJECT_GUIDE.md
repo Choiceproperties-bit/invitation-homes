@@ -2,7 +2,11 @@
 
 Status date: 2026-10-20
 
+For a concise status matrix and current blockers, see [Implementation Status](IMPLEMENTATION_STATUS.md).
+
 This guide describes the code and hosted Supabase state as currently implemented. It is intended as the first stop for contributors who need to understand the backup, run it locally, refresh the authorized inventory pilot, or plan the remaining production work.
+
+For the proposed application-to-lease-to-resident lifecycle, holding-fee controls, notification catalog, and implementation gates, see [Tenant Leasing Workflow](TENANT_LEASING_WORKFLOW.md). That document and its new schema migration are a foundation only; they do not enable transactions or provider integrations.
 
 ## 1. Purpose and Boundaries
 
@@ -19,6 +23,8 @@ The original public site exposes selected listing information. It does not expos
 - `src/components/OfficialHomepage.tsx` contains the public homepage.
 - `src/components/OfficialRentalPages.tsx` contains market/search, property detail, and generic public-information routes.
 - `src/components/RenterGuides.tsx` contains qualification, before-you-apply, application-process, and leasing-fee guides.
+- `src/components/TenantWorkflowPortal.tsx` provides the `/tenant-workflow` browser-local journey; its state machine is in `src/services/tenantWorkflow.ts`.
+- `src/services/emailTemplates.ts` contains 38 versioned transactional email templates with plain-text/HTML rendering and approval gates for sensitive notices. It does not send mail.
 - `src/components/OfficialSiteChrome.tsx` owns shared navigation and footer markup.
 - `src/services/propertyRepository.ts` maps database rows to the frontend property model and provides the local-fixture fallback.
 - `src/lib/supabaseClient.ts` initializes Supabase only when both public client variables are configured.
@@ -118,12 +124,14 @@ No ImageKit endpoint is configured in the current workspace, so the app currentl
 
 ## 6. Database Migrations and Access Control
 
-The following local migrations are applied to the linked Supabase project:
+The first four local migrations are applied to the linked Supabase project. Migrations 5 and 6 are local-only and have not been applied:
 
 1. `supabase/migrations/20261020000000_initial_rental_backend.sql`: properties, saved properties/searches, RLS, grants, and original paginated public search RPC.
 2. `supabase/migrations/20261020000001_add_property_uuid_to_search.sql`: backward-compatible search RPC returning the database UUID separately from the URL slug.
 3. `supabase/migrations/20261020000002_add_official_inventory_fields.sql`: source identity and detail fields, nullable unknown deposit, and expanded listing RPC data.
 4. `supabase/migrations/20261020000003_add_market_slug_search.sql`: market-slug-aware RPC used by official market routes.
+5. `supabase/migrations/20261020000004_add_leasing_workflow_foundation.sql`: private application, staff-membership, offer/hold, lease, ledger, resident service-request, and notification-outbox records. Browser roles receive no grants; no tenant/staff API or provider integration is implemented.
+6. `supabase/migrations/20261020000005_add_screening_deposits_lease_workflows.sql`: versioned market policies, screening cases and notice records, payment allocations, security-deposit disposition, provider lease documents, and lease events.
 
 The public properties table has RLS enabled. Anonymous/authenticated users can read published eligible listings only; client roles have no inventory write grants. Saved rows are scoped to `auth.uid()`. The public listing RPCs are `SECURITY INVOKER`, use a constrained search path, and are granted to `anon` and `authenticated`, not `PUBLIC`.
 
@@ -138,9 +146,9 @@ npx supabase@latest db lint --linked --schema public --fail-on warning
 
 ## 7. Application Routes and Functional Gaps
 
-Current app-owned routes include `/`, `/search/houses-for-rent`, `/markets/houses-for-rent/:market`, `/houses-for-rent/:slug`, `/qualify`, `/before-you-apply`, `/how-to-apply`, and `/fees`. Several other public content routes are currently lightweight generic pages. Not every navigation destination is a fully implemented workflow.
+Current app-owned routes include `/`, `/search/houses-for-rent`, `/markets/houses-for-rent/:market`, `/houses-for-rent/:slug`, `/qualify`, `/before-you-apply`, `/how-to-apply`, `/fees`, and the browser-local `/tenant-workflow` journey. Several other public content routes are currently lightweight generic pages. Not every navigation destination is a fully implemented workflow.
 
-The property detail page now uses source description, rent total, fees, disclosures, schools, floor plans, and the official application URL when available. It does not create an application. Tour controls show only a provided public virtual tour; self-show scheduling and lock access are intentionally not implemented. Saved buttons are local UI state; there is no sign-in or persisted saved-home/search UI yet.
+The property detail page uses source description, rent total, fees, disclosures, schools, floor plans, and the official application URL when available. The official application handoff remains external. The `/tenant-workflow` route covers application, screening status, holding terms, lease review, security deposit, move-in, maintenance request, renewal choice, move-out checklist, deposit disposition, and local activity. Workflow state is stored in the browser tab and does not use the private leasing schema or perform real screening, reservations, payments/refunds, legal signing, work orders, or notices. Tour controls show only a provided public virtual tour; self-show scheduling and lock access are intentionally not implemented. Saved buttons are local UI state; there is no sign-in or persisted saved-home/search UI yet.
 
 ## 8. Security and Deployment Boundaries
 
@@ -161,7 +169,7 @@ npm run test:supabase
 npm run visual:capture
 ```
 
-Current verified checks include TypeScript lint, five property repository/ImageKit unit tests, production build, hosted search/RLS integration tests, hosted public-schema lint, and direct HTTP route smoke checks. The Playwright browser capture has not been completed in this container because Chromium's Linux dependency `libatk-1.0.so.0` is missing. Install required browser libraries in a suitable environment, then capture and review at desktop and mobile sizes. The current capture script compares the homepage only; extend it to market/search/detail routes before asserting site-wide parity.
+Current verified checks include TypeScript lint, 19 unit tests across property repositories, leasing workflow guards, and email templates, production build, hosted search/RLS integration tests, hosted public-schema lint, and direct HTTP route smoke checks. The Playwright browser capture has not been completed in this container because Chromium's Linux dependency `libatk-1.0.so.0` is missing. Install required browser libraries in a suitable environment, then capture and review at desktop and mobile sizes. The current capture script compares the homepage only; extend it to market/search/detail/tenant-workflow routes before asserting site-wide parity.
 
 The production build currently emits a Vite warning about `__dirname` in `vite.config.ts`; it still builds successfully. Add CI to run lint, unit tests, build, database tests against staging, route tests, and visual checks.
 
@@ -178,6 +186,7 @@ The production build currently emits a Vite warning about `__dirname` in `vite.c
 
 ### Before real leasing or resident workflows
 
+- Review [Tenant Leasing Workflow](TENANT_LEASING_WORKFLOW.md), obtain approved policies/provider choices, and lint/test the local-only workflow migration in staging before applying it anywhere.
 - Implement authenticated account and persisted saved homes/searches.
 - Integrate approved application, tour scheduling, identity/income screening, e-signature, payment, resident maintenance, and smart-lock providers separately.
 - Define data minimization, retention, RLS, server-only secrets, audit logs, and compliance review before handling applicant or resident personal data.
