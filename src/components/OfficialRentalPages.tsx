@@ -1,10 +1,12 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { ArrowLeft, ArrowRight, Heart, Share2, SlidersHorizontal } from 'lucide-react';
 import { SAMPLE_PROPERTIES } from '../data/properties';
 import { PropertyListing } from '../types/rental';
 import { OfficialFooter, OfficialHeader } from './OfficialSiteChrome';
 import { RenterGuidePage } from './RenterGuides';
 import { GoogleRentalMap } from './GoogleRentalMap';
+import { getPropertyBySlug, searchPropertyListings } from '../services/propertyRepository';
+import { isSupabaseConfigured } from '../lib/supabaseClient';
 
 const contentPages: Record<string, { title: string; intro: string; links: [string, string][] }> = {
   '/communities/': { title: 'Rental communities', intro: 'Explore newly built single-family rental homes in select communities.', links: [['Find homes for rent', '/search/houses-for-rent'], ['Before you apply', '/before-you-apply']] },
@@ -75,6 +77,10 @@ function SearchPage({ marketName }: { marketName?: string }) {
   const [sortOrder, setSortOrder] = useState(initialParams.get('sort') ?? 'recommended');
   const [page, setPage] = useState(() => Math.max(1, Number(initialParams.get('page')) || 1));
   const [selectedMapHomeId, setSelectedMapHomeId] = useState<string | null>(null);
+  const [homes, setHomes] = useState<PropertyListing[]>(() => isSupabaseConfigured ? [] : SAMPLE_PROPERTIES.slice(0, 12));
+  const [totalCount, setTotalCount] = useState(() => isSupabaseConfigured ? 0 : SAMPLE_PROPERTIES.length);
+  const [inventoryLoading, setInventoryLoading] = useState(isSupabaseConfigured);
+  const [inventoryError, setInventoryError] = useState<string | null>(null);
   const previousFilterKey = useRef('');
 
   useEffect(() => {
@@ -127,24 +133,6 @@ function SearchPage({ marketName }: { marketName?: string }) {
     return () => window.removeEventListener('popstate', restoreFromUrl);
   }, [marketName]);
 
-  const homes = useMemo(() => SAMPLE_PROPERTIES.filter((home) => {
-    const queryMatches = !location || `${home.city} ${home.state} ${home.zipCode} ${home.address}`.toLowerCase().includes(location.toLowerCase());
-    const bedsMatch = bedrooms === 'any' || home.bedrooms >= Number(bedrooms);
-    const bathsMatch = bathrooms === 'any' || home.bathrooms >= Number(bathrooms);
-    const minPriceMatches = !minPrice || home.monthlyRent >= Number(minPrice);
-    const priceMatches = !maxPrice || home.monthlyRent <= Number(maxPrice);
-    const minAreaMatches = !minSqft || home.squareFeet >= Number(minSqft);
-    const maxAreaMatches = !maxSqft || home.squareFeet <= Number(maxSqft);
-    const petsMatch = !petFriendly || home.petFriendly;
-    const smartHomeMatches = !smartHome || home.smartHome;
-    return queryMatches && bedsMatch && bathsMatch && minPriceMatches && priceMatches && minAreaMatches && maxAreaMatches && petsMatch && smartHomeMatches;
-  }).sort((first, second) => {
-    if (sortOrder === 'price_asc') return first.monthlyRent - second.monthlyRent;
-    if (sortOrder === 'price_desc') return second.monthlyRent - first.monthlyRent;
-    if (sortOrder === 'beds_desc') return second.bedrooms - first.bedrooms;
-    return 0;
-  }), [location, bedrooms, bathrooms, minPrice, maxPrice, minSqft, maxSqft, petFriendly, smartHome, sortOrder]);
-
   const activeFilterCount = [
     bedrooms !== 'any',
     bathrooms !== 'any',
@@ -156,9 +144,45 @@ function SearchPage({ marketName }: { marketName?: string }) {
     smartHome
   ].filter(Boolean).length;
   const pageSize = 12;
-  const pageCount = Math.max(1, Math.ceil(homes.length / pageSize));
+  const pageCount = Math.max(1, Math.ceil(totalCount / pageSize));
   const currentPage = Math.min(page, pageCount);
-  const pagedHomes = homes.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+
+  useEffect(() => {
+    let active = true;
+    setInventoryLoading(true);
+    setInventoryError(null);
+    searchPropertyListings({
+      query: location,
+      minPrice,
+      maxPrice,
+      bedrooms,
+      bathrooms,
+      minSqft,
+      maxSqft,
+      petFriendly,
+      smartHome,
+      sortOrder,
+      page: currentPage,
+      pageSize
+    })
+      .then((result) => {
+        if (!active) return;
+        setHomes(result.listings);
+        setTotalCount(result.totalCount);
+        setSelectedMapHomeId((selectedId) => result.listings.some((home) => home.id === selectedId) ? selectedId : null);
+      })
+      .catch(() => {
+        if (active) {
+          setHomes([]);
+          setTotalCount(0);
+          setInventoryError('Homes could not be loaded. Please try again shortly.');
+        }
+      })
+      .finally(() => {
+        if (active) setInventoryLoading(false);
+      });
+    return () => { active = false; };
+  }, [location, minPrice, maxPrice, bedrooms, bathrooms, minSqft, maxSqft, petFriendly, smartHome, sortOrder, currentPage]);
 
   useEffect(() => {
     if (page !== currentPage) setPage(currentPage);
@@ -186,7 +210,7 @@ function SearchPage({ marketName }: { marketName?: string }) {
           </div>
 
           <div className="flex flex-wrap items-center justify-between gap-3 py-4">
-            <p className="text-sm text-[#555]">Showing {homes.length ? (currentPage - 1) * pageSize + 1 : 0}-{Math.min(currentPage * pageSize, homes.length)} of {homes.length} homes <span className="ml-2 text-xs text-[#777]">Preview inventory</span></p>
+            <p className="text-sm text-[#555]">{inventoryLoading ? 'Loading homes...' : `Showing ${totalCount ? (currentPage - 1) * pageSize + 1 : 0}-${Math.min(currentPage * pageSize, totalCount)} of ${totalCount} homes`}{!isSupabaseConfigured && <span className="ml-2 text-xs text-[#777]">Preview inventory</span>}</p>
             <div className="flex flex-wrap items-center gap-2">
               <button type="button" aria-expanded={filtersOpen} onClick={() => setFiltersOpen(!filtersOpen)} className="inline-flex min-h-10 items-center gap-2 border border-[#cfcfcf] px-3 text-sm"><SlidersHorizontal size={16} />Filters {activeFilterCount}</button>
               <label className="flex min-h-10 items-center gap-2 border border-[#cfcfcf] px-3 text-sm">Sort<select value={sortOrder} onChange={(event) => setSortOrder(event.target.value)} className="bg-white font-medium outline-none"><option value="recommended">Recommended</option><option value="price_asc">Price: low to high</option><option value="price_desc">Price: high to low</option><option value="beds_desc">Bedrooms</option></select></label>
@@ -205,17 +229,14 @@ function SearchPage({ marketName }: { marketName?: string }) {
 
           <div className={viewMode === 'split' ? 'grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(320px,0.85fr)]' : ''}>
             {viewMode !== 'map' && <div className="grid content-start gap-4 sm:grid-cols-2 xl:grid-cols-3">
-              {pagedHomes.map((property) => <HomeCard key={property.id} property={property} selected={selectedMapHomeId === property.id} onSelect={setSelectedMapHomeId} />)}
-              {homes.length === 0 && <p className="col-span-full py-14 text-center text-sm text-[#666]">No preview homes match these filters.</p>}
+              {homes.map((property) => <HomeCard key={property.id} property={property} selected={selectedMapHomeId === property.id} onSelect={setSelectedMapHomeId} />)}
+              {inventoryError && <p role="alert" className="col-span-full py-14 text-center text-sm text-[#8a2e2e]">{inventoryError}</p>}
+              {!inventoryLoading && !inventoryError && totalCount === 0 && <p className="col-span-full py-14 text-center text-sm text-[#666]">No homes match these filters.</p>}
             </div>}
             {viewMode !== 'list' && <GoogleRentalMap
               homes={homes}
               selectedHomeId={selectedMapHomeId}
-              onSelectHome={(homeId) => {
-                setSelectedMapHomeId(homeId);
-                const homeIndex = homes.findIndex((home) => home.id === homeId);
-                if (homeIndex >= 0) setPage(Math.floor(homeIndex / pageSize) + 1);
-              }}
+              onSelectHome={setSelectedMapHomeId}
             />}
           </div>
 
@@ -232,11 +253,35 @@ function SearchPage({ marketName }: { marketName?: string }) {
 }
 
 function PropertyPage({ slug }: { slug: string }) {
-  const property = SAMPLE_PROPERTIES.find((item) => item.id === slug);
+  const [property, setProperty] = useState<PropertyListing | null>(() => isSupabaseConfigured ? null : SAMPLE_PROPERTIES.find((item) => item.id === slug) ?? null);
+  const [propertyLoading, setPropertyLoading] = useState(isSupabaseConfigured);
+  const [propertyError, setPropertyError] = useState<string | null>(null);
   const [activeImage, setActiveImage] = useState(0);
   const [activeMediaView, setActiveMediaView] = useState<'tour' | 'floorPlan' | null>(null);
   const [saved, setSaved] = useState(false);
   const [monthlyIncome, setMonthlyIncome] = useState('');
+
+  useEffect(() => {
+    let active = true;
+    getPropertyBySlug(slug)
+      .then((listing) => {
+        if (active) setProperty(listing);
+      })
+      .catch(() => {
+        if (active) {
+          setProperty(null);
+          setPropertyError('Property details could not be loaded. Please try again shortly.');
+        }
+      })
+      .finally(() => {
+        if (active) setPropertyLoading(false);
+      });
+    return () => { active = false; };
+  }, [slug]);
+
+  if (propertyLoading) {
+    return <><OfficialHeader /><main className="mx-auto min-h-[60vh] max-w-[1240px] px-4 py-12 sm:px-8" aria-live="polite">Loading property details...</main><OfficialFooter /></>;
+  }
 
   if (!property) {
     const address = slug.replace(/-/g, ' ').replace(/\b\w/g, (character) => character.toUpperCase());
@@ -246,7 +291,7 @@ function PropertyPage({ slug }: { slug: string }) {
         <main className="mx-auto min-h-[60vh] max-w-[1240px] px-4 py-8 sm:px-8">
           <p className="text-sm text-[#666]">Home <span className="px-1">/</span> Houses for rent</p>
           <h1 className="mt-4 text-2xl font-semibold sm:text-3xl">{address}</h1>
-          <p className="mt-6 max-w-xl text-sm leading-6 text-[#555]">This listing is not included in the local preview inventory yet.</p>
+          <p className="mt-6 max-w-xl text-sm leading-6 text-[#555]">{propertyError ?? (isSupabaseConfigured ? 'This property is not currently available.' : 'This listing is not included in the local preview inventory yet.')}</p>
           <a href="/search/houses-for-rent" className="mt-5 inline-flex min-h-11 items-center gap-2 bg-[#168241] px-5 text-sm font-semibold text-white">Back to home search<ArrowRight size={15} /></a>
         </main>
         <OfficialFooter />

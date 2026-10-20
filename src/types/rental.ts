@@ -12,7 +12,7 @@ export interface PropertyListing {
   bathrooms: number;
   squareFeet: number;
   availableDate: string;
-  status: 'available' | 'pending' | 'leased';
+  status: 'available' | 'pending' | 'coming_soon' | 'leased';
   petFriendly: boolean;
   petDetails: string;
   smartHome: boolean;

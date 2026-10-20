@@ -2,14 +2,15 @@
 
 Status date: 2026-10-20
 
-This repository is an authorized frontend backup in progress. The active application is a Vite/React site. It currently uses local sample listings and does not provide production leasing, account, payment, tour-booking, or resident-service backends.
+This repository is an authorized frontend backup in progress. The active application is a Vite/React site. Inventory search and property detail can query Supabase when configured, but no verified inventory is loaded yet. Production account, application, payment, tour-booking, and resident-service workflows are not connected.
 
 ## Current Implementation
 
 - Shared responsive site header and footer with local Invitation Homes logo and hamburger assets.
 - Homepage sections for the renter value pillars, regional markets, communities, resident services, application guidance, apps, and testimonials.
 - Search and market routes with URL-synchronized location, price, bed/bath, area, pet, Smart Home, sort, layout, and page state.
-- Fixture-backed listing cards and property detail pages with a photo gallery, rent/deposit summary, disclosures, school information, and affordability estimate.
+- Supabase-aware property repository with a paginated search RPC; local fixtures are used when Supabase is not configured.
+- Property detail pages query by slug and include a photo gallery, rent/deposit summary, disclosures, school information, and affordability estimate.
 - Optional property data fields for 360-degree tour and floor-plan media; viewer controls only appear when those assets exist.
 - Qualification, before-you-apply, application-process, and leasing-fees pages.
 - Google Maps component with clustered price markers and map/list selection wiring. A restricted Google Maps API key is required for map tiles; the no-key state is intentional.
@@ -41,10 +42,15 @@ This repository is an authorized frontend backup in progress. The active applica
 - Reproduce the communities, difference/service, resident resource, FAQ, contact, privacy, and terms routes with page-specific content and layouts.
 - Verify every navigation and footer destination against the official route inventory, including external resident, payment, support, investor, and career services.
 
-## Backend Phase (After Frontend Review)
+## Backend Phase (In Progress)
 
-- Use Supabase for app-owned data and authentication where appropriate; define schema, migrations, row-level security, and role policies before storing resident or applicant data.
-- Connect authorized inventory and availability data, saved homes/searches, and application state.
+- The initial migration `supabase/migrations/20261020000000_initial_rental_backend.sql` is applied to the linked hosted Supabase project. This workspace has no local `VITE_SUPABASE_URL` or public anon/publishable key configured.
+- Import approved, verified listing data into `public.properties`; no seed inventory is included, and records remain private until marked published.
+- Configure local and Cloudflare Pages `VITE_SUPABASE_URL` and public anon/publishable key values without committing them.
+- Add Supabase-backed automated tests for `search_public_properties`, RLS access, and published/unpublished inventory behavior.
+- Complete the authenticated saved-homes and saved-searches UI backed by the existing user-scoped RLS tables.
+- Define any additional schema, migrations, RLS, and role policies before storing resident or applicant data.
+- Connect authorized availability and application state when approved data/services are available.
 - Integrate approved identity/income screening, e-signature, payment, tour scheduling, smart-lock, and maintenance providers as separate services.
 - Keep secrets server-side. Do not put service-role keys, payment secrets, screening credentials, or lock codes in Vite client variables.
 
