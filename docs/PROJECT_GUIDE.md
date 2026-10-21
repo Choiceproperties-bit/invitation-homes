@@ -1,6 +1,6 @@
 # Project Guide
 
-Status date: 2026-10-20
+Status date: 2026-10-21
 
 For a concise status matrix and current blockers, see [Implementation Status](IMPLEMENTATION_STATUS.md).
 
@@ -169,7 +169,7 @@ npm run test:supabase
 npm run visual:capture
 ```
 
-Current verified checks include TypeScript lint, 19 unit tests across property repositories, leasing workflow guards, and email templates, production build, hosted search/RLS integration tests, hosted public-schema lint, and direct HTTP route smoke checks. The Playwright browser capture has not been completed in this container because Chromium's Linux dependency `libatk-1.0.so.0` is missing. Install required browser libraries in a suitable environment, then capture and review at desktop and mobile sizes. The current capture script compares the homepage only; extend it to market/search/detail/tenant-workflow routes before asserting site-wide parity.
+Current verified checks include TypeScript lint, 31 unit tests across property repositories, leasing workflow guards, and email templates, production build, hosted search/RLS integration tests, hosted public-schema lint, and direct HTTP route smoke checks. The Playwright browser capture now runs in this container after installing Chromium's Linux dependencies: `npm run visual:capture` completes with no page errors, console errors, or failed requests for the local homepage at desktop and mobile widths. The current capture script compares the homepage only; extend it to market/search/detail/tenant-workflow routes before asserting site-wide parity.
 
 The production build currently emits a Vite warning about `__dirname` in `vite.config.ts`; it still builds successfully. Add CI to run lint, unit tests, build, database tests against staging, route tests, and visual checks.
 

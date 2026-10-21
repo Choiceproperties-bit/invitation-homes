@@ -1,6 +1,6 @@
 # Production Roadmap
 
-Status date: 2026-10-20
+Status date: 2026-10-21
 
 For the current done/local-only/blocked/not-started matrix, see [docs/IMPLEMENTATION_STATUS.md](docs/IMPLEMENTATION_STATUS.md).
 
@@ -20,7 +20,7 @@ The tenant lifecycle, holding-fee controls, notification catalog, and proposed l
 - Authorized source importer at `scripts/sync-official-inventory.mjs`. Default mode is dry-run, selecting three listings per market; pilot upserts use source IDs and do not copy image binaries.
 - 60 source-managed listings across 20 source markets. 58 have photo URLs; the imported pilot has fees, lease terms, and school data for all records.
 - Supabase integration test `npm run test:supabase`; test fixtures are transaction-scoped and rolled back.
-- Production builds, TypeScript checks, five unit tests, hosted RLS/search checks, and hosted schema lint pass.
+- Production builds, TypeScript checks, 31 unit tests, hosted RLS/search checks, and hosted schema lint pass.
 - `/api/clone` and `/api/transpile` are not registered in production. In development they require `ENABLE_CLONER_API=true`; that flag is not protection against untrusted traffic.
 - User-provided HTML preview in the dormant transpiler is sandboxed. Unsupported hard-coded parity-score panel was removed.
 
@@ -29,16 +29,16 @@ The tenant lifecycle, holding-fee controls, notification catalog, and proposed l
 - Supabase schema and pilot data are in the linked hosted project. The local workspace does not persist Supabase URL/anon-key configuration; configure the public key and URL in an ignored local environment file or deployment settings to see hosted listings.
 - The search view map uses Leaflet with keyless OpenStreetMap tiles. No map API key, billing account, or paid tier is required. Tiles have not been validated against production traffic; the public OpenStreetMap servers have a fair-use policy and are not intended for high traffic.
 - ImageKit transformation support exists, but no ImageKit URL endpoint is configured. Images still load from the authorized source CDN. The current integration optimizes a remote origin and does not upload images or reduce storage at the original host.
-- The Playwright capture is not verified in this container: Chromium's Linux dependency `libatk-1.0.so.0` is unavailable. The capture script currently covers the homepage; broader route visual checks remain.
+- The Playwright capture now runs in this container after installing Chromium's Linux dependencies. `npm run visual:capture` reports no page errors, console errors, or failed requests for the local homepage at desktop and mobile widths. The capture script still covers the homepage only; broader route visual checks remain.
 
 ## Next Work, in Order
 
 ### 1. Validate the Backup Experience
 
-- Configure persistent Supabase public client variables and a restricted Maps key for a staging/preview environment.
+- Configure persistent Supabase public client variables for a staging/preview environment. The Leaflet map needs no map API key; only set `VITE_MAP_TILE_URL` and `VITE_MAP_TILE_ATTRIBUTION` if you move to a dedicated tile provider.
 - Test market filters, all-in rent display, application handoff, photo/floor-plan galleries, empty states, and direct route loads against the 60-listing pilot.
 - Configure ImageKit's approved remote origin and URL endpoint if desired, then compare delivery, transformations, failures, and mobile performance.
-- Install browser system dependencies in CI or a suitable host and capture homepage, search, market, property-detail, and renter-guide routes at desktop and mobile widths.
+- Extend the capture script to the search, market, property-detail, and renter-guide routes at desktop and mobile widths, and install Chromium's Linux dependencies in CI so the capture runs there as well.
 - Add accessibility/keyboard review and route/interactions tests before claiming parity.
 
 ### 2. Make Inventory Sync Operational
@@ -62,7 +62,7 @@ The tenant lifecycle, holding-fee controls, notification catalog, and proposed l
 - Replace generic content fallbacks with approved page-specific copy/layouts, or deliberately link users to authorized official services.
 - Verify every header/footer link, privacy/terms/cookie controls, Equal Housing/accessibility content, and external service destinations.
 - Add production monitoring, structured logging, health checks, content/security headers, backups, rollback procedure, and CI release gates.
-- Resolve the Vite `__dirname` configuration warning and the outstanding browser visual-check environment issue.
+- Resolve the Vite `__dirname` configuration warning and add Chromium's Linux dependencies to CI so visual checks run on every build.
 
 ## Database Migrations
 

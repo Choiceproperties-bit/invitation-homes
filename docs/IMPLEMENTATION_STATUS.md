@@ -17,7 +17,9 @@ This page is the current at-a-glance status. The [Project Guide](PROJECT_GUIDE.m
 - Transactional outbox claim/completion functions and an authenticated dispatcher endpoint for retryable post-submission applicant/staff notifications.
 - Leasing workflow specification with tenant lifecycle, status models, holding-fee safeguards, notification catalog, implementation sequence, and acceptance gates.
 - Append-only table grants for captured application consents, application events, and notification delivery attempts. No browser roles have grants on the new leasing tables.
-- `npm run lint`, all 24 unit tests, and `npm run build` passed before the latest outbox/deployment documentation edits. The build reports the existing Vite `__dirname` warning.
+- `npm run lint`, all 31 unit tests, and `npm run build` passed. The build reports the existing Vite `__dirname` warning.
+- The search view map uses Leaflet with keyless OpenStreetMap tiles. No map API key, billing account, or paid tier is required. `VITE_MAP_TILE_URL` and `VITE_MAP_TILE_ATTRIBUTION` are optional overrides for a dedicated tile provider.
+- `npm run visual:capture` runs in this container and reports no page errors, console errors, or failed requests for the local homepage at desktop and mobile widths.
 
 ## Local Only
 
