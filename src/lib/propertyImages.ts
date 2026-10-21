@@ -1,4 +1,4 @@
-export function getPropertyImages(property: any) {
-  if (property.images && property.images.length > 0) return property.images;
-  return [property.featuredImage];
+export function getPropertyImages(images: string[], featuredImage: string) {
+  if (images && images.length > 0) return images;
+  return [featuredImage];
 }

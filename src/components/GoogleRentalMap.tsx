@@ -14,9 +14,8 @@ export function GoogleRentalMap({ homes, selectedHomeId, onSelectHome }: Keyless
   const mapInstanceRef = useRef<L.Map | null>(null);
   const markersRef = useRef<L.Marker[]>([]);
 
-  // Calculate center based on homes or default to Atlanta
-  const centerLat = homes.length > 0 ? homes[0].latitude : 33.749;
-  const centerLng = homes.length > 0 ? homes[0].longitude : -84.388;
+  const centerLat = homes.length > 0 ? homes[0].coordinates.lat : 33.749;
+  const centerLng = homes.length > 0 ? homes[0].coordinates.lng : -84.388;
 
   useEffect(() => {
     if (!mapContainerRef.current) return;
@@ -49,14 +48,13 @@ export function GoogleRentalMap({ homes, selectedHomeId, onSelectHome }: Keyless
     const map = mapInstanceRef.current;
     if (!map) return;
 
-    // Clear existing markers
     markersRef.current.forEach((marker) => marker.remove());
     markersRef.current = [];
 
     const bounds = L.latLngBounds([]);
 
     homes.forEach((home) => {
-      bounds.extend([home.latitude, home.longitude]);
+      bounds.extend([home.coordinates.lat, home.coordinates.lng]);
       const isSelected = home.id === selectedHomeId;
 
       const customIcon = L.divIcon({
@@ -66,7 +64,7 @@ export function GoogleRentalMap({ homes, selectedHomeId, onSelectHome }: Keyless
         iconAnchor: [30, 14]
       });
 
-      const marker = L.marker([home.latitude, home.longitude], { icon: customIcon }).addTo(map);
+      const marker = L.marker([home.coordinates.lat, home.coordinates.lng], { icon: customIcon }).addTo(map);
 
       marker.on('click', () => {
         onSelectHome(home.id);
@@ -80,7 +78,7 @@ export function GoogleRentalMap({ homes, selectedHomeId, onSelectHome }: Keyless
     } else if (selectedHomeId) {
       const selected = homes.find(h => h.id === selectedHomeId);
       if (selected) {
-        map.setView([selected.latitude, selected.longitude], 13, { animate: true });
+        map.setView([selected.coordinates.lat, selected.coordinates.lng], 13, { animate: true });
       }
     }
   }, [homes, selectedHomeId]);

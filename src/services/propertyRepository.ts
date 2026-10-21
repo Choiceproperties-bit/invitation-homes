@@ -7,9 +7,10 @@ export async function getPropertyBySlug(slug: string): Promise<PropertyListing |
   return found || SAMPLE_PROPERTIES[0];
 }
 
-export async function searchPropertyListings(params: any): Promise<{ properties: PropertyListing[]; totalCount: number }> {
+export async function searchPropertyListings(params: any): Promise<{ properties: PropertyListing[]; listings: PropertyListing[]; totalCount: number }> {
   return {
     properties: SAMPLE_PROPERTIES,
+    listings: SAMPLE_PROPERTIES,
     totalCount: SAMPLE_PROPERTIES.length
   };
 }

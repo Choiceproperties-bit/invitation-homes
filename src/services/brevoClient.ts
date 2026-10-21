@@ -1,14 +1,14 @@
-import { createClient } from '@supabase/supabase-js';
+export interface EmailOptions {
+  to: string;
+  subject: string;
+  htmlContent: string;
+  textContent: string;
+}
 
-const supabaseUrl = process.env.VITE_SUPABASE_URL || 'https://poqgtsltsziuwvzskgth.supabase.co';
-const supabaseAnonKey = process.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBvcWd0c2x0c3ppdXd2enNrZ3RoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTA3NDU4NzcsImV4cCI6MjEwNjMyMTg3N30.c1yck8cVXksYxE1xVhPGw2Q6EQrLNbkI8IZXbQG-y3E';
-
-const supabase = createClient(supabaseUrl, supabaseAnonKey);
-
-export async function sendEmailViaBrevo({ to, subject, htmlContent, textContent }) {
-  const apiKey = process.env.Bravo;
+export async function sendEmailViaBrevo({ to, subject, htmlContent, textContent }: EmailOptions) {
+  const apiKey = (process.env as any).BREVO_API_KEY || (process.env as any).Bravo;
   if (!apiKey) {
-    console.warn('Brevo (Bravo) API key not found in environment variables.');
+    console.warn('Brevo API key not found in environment variables.');
     return { success: false, error: 'API key missing' };
   }
 
@@ -37,8 +37,8 @@ export async function sendEmailViaBrevo({ to, subject, htmlContent, textContent 
 
     console.log('Email sent successfully via Brevo:', data);
     return { success: true, data };
-  } catch (err) {
+  } catch (err: any) {
     console.error('Failed to send email via Brevo:', err);
-    return { success: false, error: err.message };
+    return { success: false, error: err?.message ?? String(err) };
   }
 }
