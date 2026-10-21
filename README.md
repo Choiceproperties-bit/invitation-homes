@@ -13,7 +13,7 @@ An authorized Vite + React renter experience with a 60-listing public inventory 
 - A tenant workflow at `/tenant-workflow` covering application, screening state, holding terms, lease review, security deposit, move-in, maintenance, renewal, move-out, deposit disposition, and an in-app activity timeline. The browser-local workflow is not server-backed: it does not submit operational applications, run screening, reserve homes, move funds, execute legal documents, create work orders, or send notices.
 - Email-verified application intake at `/apply/:propertySlug`: submission is stored as a draft, terms consent is versioned, and a one-time email link is required before the application is marked submitted. It requires migration 7 plus server-side configuration.
 - 40 versioned transactional email templates in TypeScript and Google Apps Script. Sensitive legal/incident templates require approved content. Apps Script delivery uses a transactional outbox with retry status; the script and server environment still need deployment/configuration.
-- Google Maps integration in the search view. Without a configured key, the page displays a setup message instead of a simulated map.
+- Keyless Leaflet map with OpenStreetMap tiles in the search view. No API key, billing account, or paid map tier is required.
 - A Playwright capture script for comparing the official and local homepages at desktop and mobile viewports.
 
 These routes are a work in progress and have not been certified for pixel-perfect parity. The imported listings are a small live-data pilot; the local fixture set and some informational copy are previews and must not be treated as authoritative operational or legal guidance.
@@ -23,7 +23,7 @@ These routes are a work in progress and have not been certified for pixel-perfec
 - React 19, TypeScript, Vite, and Tailwind CSS v4.
 - Express server with Vite middleware in development and static-file serving in production.
 - Supabase JS client and a Postgres migration for published property inventory, a paginated search RPC, and RLS-protected saved-property/search tables.
-- Google Maps React components and marker clustering.
+- Leaflet map with OpenStreetMap tiles and price-pin markers. No map API key is needed.
 - Playwright for browser-based visual capture and interaction checks.
 - Cheerio and JSZip remain in the repository for the separate cloner/transpiler tooling; those tools are not mounted in the active official-site application shell.
 
@@ -74,16 +74,20 @@ npm run sync:official-inventory -- --limit-per-market=3 --apply
 
 Use `--market=atlanta-georgia` to limit a run to one market. `--all --apply` is an explicit full-catalog import; review a complete dry run first. Source availability changes continuously, so the sync reports count differences and refuses material gaps. Imported image files are not copied into Supabase; only public image URLs are stored.
 
-### Google Maps
+### Map Tiles
 
-Set a browser-restricted Google Maps key in the local environment to enable map tiles and markers:
+The map is built with Leaflet and OpenStreetMap tiles. It needs no API key, no billing account, and no paid tier. The default tile URL and attribution are baked in, so the map works with an empty environment file.
+
+To use a different free tile provider, set the tile URL and attribution explicitly:
 
 ```bash
-VITE_GOOGLE_MAPS_API_KEY=your-restricted-key
-VITE_GOOGLE_MAP_ID=your-map-id
+VITE_MAP_TILE_URL=https://tile.openstreetmap.org/{z}/{x}/{y}.png
+VITE_MAP_TILE_ATTRIBUTION="&copy; <a href=\"https://www.openstreetmap.org/copyright\">OpenStreetMap</a> contributors"
 ```
 
-Do not commit API keys. `VITE_` values are included in browser code, so restrict the key to approved application origins and only the required Maps APIs. The map ID is optional; the component uses Google's demo map ID when none is provided.
+`VITE_` values are included in browser code, so they are public in the generated bundle. Never use them for a secret.
+
+OpenStreetMap's public tile servers have a fair-use policy. They are fine for a small pilot, but a high-traffic site should use a self-hosted or dedicated free tile source instead of the shared public servers.
 
 ### ImageKit Remote-Origin Delivery
 
@@ -119,7 +123,7 @@ Cloudflare Pages can host the built frontend as a static site. This does not dep
 	| Root directory | Repository root (leave the default) |
 
 3. Set the build environment to Node.js 22 or newer (Vite 8 requires Node.js 20.19+ or 22.12+).
-4. In the Pages project settings, add `VITE_GOOGLE_MAPS_API_KEY` and, optionally, `VITE_GOOGLE_MAP_ID` for both Preview and Production environments. Restrict the key to the approved Pages preview and production origins, and allow only the required Google Maps APIs. A `VITE_` value is public in the generated browser bundle; never use it for a secret.
+4. In the Pages project settings, no map variables are required. The Leaflet map uses keyless OpenStreetMap tiles by default. If you use a different tile provider, add `VITE_MAP_TILE_URL` and `VITE_MAP_TILE_ATTRIBUTION` for both Preview and Production environments. A `VITE_` value is public in the generated browser bundle; never use it for a secret.
 5. Save the settings and trigger a deployment. Cloudflare builds the selected branch and publishes `dist`; use the generated `*.pages.dev` URL to review the preview. Add a custom domain only after the preview and authorization settings are verified.
 
 The app uses client-side routes. Cloudflare Pages serves the SPA entry point for routes when no `404.html` is present; verify direct loads of `/search/houses-for-rent`, `/qualify`, and a property route on the deployed preview.
@@ -132,7 +136,7 @@ The Express server registers these endpoints only outside production when `ENABL
 
 ## Production Status and Security Notes
 
-The current frontend is not ready to serve as the live leasing backup. The public listing source is connected for a 60-home pilot; before operational use, expand and monitor the sync, configure the public Supabase client and Google Maps key, complete ImageKit setup if desired, implement or link authorized renter/resident services, and finish desktop/mobile visual and accessibility review.
+The current frontend is not ready to serve as the live leasing backup. The public listing source is connected for a 60-home pilot; before operational use, expand and monitor the sync, configure the public Supabase client, complete ImageKit setup if desired, implement or link authorized renter/resident services, and finish desktop/mobile visual and accessibility review. No paid map service is needed for the map.
 
 The Express server also contains development cloner endpoints, including `/api/clone`, which fetches a caller-provided URL. Do not expose this endpoint publicly until it has strict destination validation, SSRF protections, request limits, and appropriate access controls; remove or disable it from the production service if the cloner is not needed.
 

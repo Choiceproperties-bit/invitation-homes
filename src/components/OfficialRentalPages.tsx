@@ -4,7 +4,7 @@ import { SAMPLE_PROPERTIES } from '../data/properties';
 import { PropertyListing } from '../types/rental';
 import { OfficialFooter, OfficialHeader } from './OfficialSiteChrome';
 import { RenterGuidePage } from './RenterGuides';
-import { GoogleRentalMap } from './GoogleRentalMap';
+import { RentalMap } from './RentalMap';
 import { getPropertyBySlug, searchPropertyListings } from '../services/propertyRepository';
 import { isSupabaseConfigured } from '../lib/supabaseClient';
 import { getPropertyImages } from '../lib/propertyImages';
@@ -261,7 +261,7 @@ function SearchPage({ marketName, marketSlug }: { marketName?: string; marketSlu
               {inventoryError && <p role="alert" className="col-span-full py-14 text-center text-sm text-[#8a2e2e]">{inventoryError}</p>}
               {!inventoryLoading && !inventoryError && totalCount === 0 && <p className="col-span-full py-14 text-center text-sm text-[#666]">No homes match these filters.</p>}
             </div>}
-            {viewMode !== 'list' && <GoogleRentalMap
+            {viewMode !== 'list' && <RentalMap
               homes={homes}
               selectedHomeId={selectedMapHomeId}
               onSelectHome={setSelectedMapHomeId}

@@ -42,8 +42,8 @@ The active UI does not mount `ClonerStudio`, `QuickTranspiler`, `InvitationHomes
 | --- | --- | --- |
 | `VITE_SUPABASE_URL` | Supabase project URL | Yes |
 | `VITE_SUPABASE_ANON_KEY` | Supabase anon/publishable key | Yes; protected by RLS |
-| `VITE_GOOGLE_MAPS_API_KEY` | Browser-restricted Maps key | Yes; restrict by origin and API |
-| `VITE_GOOGLE_MAP_ID` | Optional Maps map ID | Yes |
+| `VITE_MAP_TILE_URL` | Optional tile URL override for the Leaflet map | No; defaults to keyless OpenStreetMap tiles |
+| `VITE_MAP_TILE_ATTRIBUTION` | Optional tile attribution override | No; defaults to OpenStreetMap attribution |
 | `VITE_IMAGEKIT_URL_ENDPOINT` | ImageKit public delivery endpoint | Yes |
 | `VITE_IMAGEKIT_SOURCE_ORIGIN` | Approved source origin for ImageKit URL conversion | Yes |
 | `ENABLE_CLONER_API` | Explicitly opts development server into legacy clone endpoints | Server only; never use in production |
@@ -177,7 +177,7 @@ The production build currently emits a Vite warning about `__dirname` in `vite.c
 
 ### Before any public production use
 
-- Configure persistent browser-safe Supabase URL/anon key values and a restricted Google Maps key; validate the deployed market routes against the hosted pilot.
+- Configure persistent browser-safe Supabase URL/anon key values; the Leaflet map needs no key. Validate the deployed market routes against the hosted pilot.
 - Configure ImageKit's remote origin and URL endpoint if ImageKit delivery is required. Decide whether the goal is CDN transformation or ImageKit-owned image storage; they are not the same.
 - Complete accessibility and visual comparison on homepage, search/market, detail, and renter-guide routes.
 - Add operational inventory reconciliation so removed/unavailable listings cannot remain published indefinitely.

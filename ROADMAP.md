@@ -27,7 +27,7 @@ The tenant lifecycle, holding-fee controls, notification catalog, and proposed l
 ## Current External Configuration
 
 - Supabase schema and pilot data are in the linked hosted project. The local workspace does not persist Supabase URL/anon-key configuration; configure the public key and URL in an ignored local environment file or deployment settings to see hosted listings.
-- Google Maps requires a browser-restricted key and optional map ID. Map tiles have not been validated with production credentials.
+- The search view map uses Leaflet with keyless OpenStreetMap tiles. No map API key, billing account, or paid tier is required. Tiles have not been validated against production traffic; the public OpenStreetMap servers have a fair-use policy and are not intended for high traffic.
 - ImageKit transformation support exists, but no ImageKit URL endpoint is configured. Images still load from the authorized source CDN. The current integration optimizes a remote origin and does not upload images or reduce storage at the original host.
 - The Playwright capture is not verified in this container: Chromium's Linux dependency `libatk-1.0.so.0` is unavailable. The capture script currently covers the homepage; broader route visual checks remain.
 
