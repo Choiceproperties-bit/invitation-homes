@@ -4,7 +4,6 @@ import { SAMPLE_PROPERTIES } from '../data/properties';
 import { PropertyListing } from '../types/rental';
 import { OfficialFooter, OfficialHeader } from './OfficialSiteChrome';
 import { RenterGuidePage } from './RenterGuides';
-import { GoogleRentalMap } from './GoogleRentalMap';
 import { getPropertyBySlug, searchPropertyListings } from '../services/propertyRepository';
 import { isSupabaseConfigured } from '../lib/supabaseClient';
 import { getPropertyImages } from '../lib/propertyImages';
@@ -260,11 +259,17 @@ function SearchPage({ marketName, marketSlug }: { marketName?: string; marketSlu
               {inventoryError && <p role="alert" className="col-span-full py-14 text-center text-sm text-[#8a2e2e]">{inventoryError}</p>}
               {!inventoryLoading && !inventoryError && totalCount === 0 && <p className="col-span-full py-14 text-center text-sm text-[#666]">No homes match these filters.</p>}
             </div>}
-            {viewMode !== 'list' && <GoogleRentalMap
-              homes={homes}
-              selectedHomeId={selectedMapHomeId}
-              onSelectHome={setSelectedMapHomeId}
-            />}
+            {viewMode !== 'list' && (
+              <div className="rounded-2xl border border-slate-200 bg-slate-50 p-8 text-center flex flex-col items-center justify-center min-h-[400px]">
+                <div className="w-12 h-12 rounded-full bg-emerald-100 text-[#04a54f] flex items-center justify-center font-bold text-lg mb-3">
+                  📍
+                </div>
+                <h3 className="text-base font-extrabold text-[#231f20]">Location &amp; Neighborhood View</h3>
+                <p className="text-xs text-slate-600 max-w-sm mt-1">
+                  Viewing available rental homes in this market. Click any listing card to view details, floor plans, and schedule a self-guided smart tour.
+                </p>
+              </div>
+            )}
           </div>
 
           {pageCount > 1 && <nav aria-label="Search result pages" className="mt-8 flex items-center justify-center gap-4">
