@@ -44,13 +44,11 @@ const output = execFileSync('npx', [
   sql
 ], { encoding: 'utf8' });
 
-const jsonStart = Math.min(
-  ...[output.indexOf('{'), output.indexOf('[')].filter((idx) => idx >= 0)
-);
-const jsonEnd = Math.max(output.lastIndexOf('}'), output.lastIndexOf(']'));
+const jsonStart = output.indexOf('{');
+const jsonEnd = output.lastIndexOf('}');
 assert.ok(jsonStart >= 0 && jsonEnd > jsonStart, 'Supabase CLI returned no JSON result');
-const parsed = JSON.parse(output.slice(jsonStart, jsonEnd + 1));
-const [row] = Array.isArray(parsed) ? parsed : (parsed.rows ?? []);
+const result = JSON.parse(output.slice(jsonStart, jsonEnd + 1));
+const [row] = result.rows ?? [];
 
 assert.ok(row, 'Supabase query returned no result row');
 assert.equal(row.published_count, 2, 'search should hide unpublished listings');

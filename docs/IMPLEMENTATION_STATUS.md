@@ -1,6 +1,6 @@
 # Implementation Status
 
-Last updated: 2026-10-20
+Last updated: 2026-10-21
 
 This page is the current at-a-glance status. The [Project Guide](PROJECT_GUIDE.md) explains the public app and inventory; the [Tenant Leasing Workflow](TENANT_LEASING_WORKFLOW.md) describes the tenant lifecycle, local workflow, and production integration boundary.
 
@@ -12,29 +12,34 @@ This page is the current at-a-glance status. The [Project Guide](PROJECT_GUIDE.m
 - Local-only workflow schema covering applications, participants/consents, staff memberships, offers/holds, screening cases and required notices, payment ledger/allocations, security-deposit receipt/disposition, lease documents/signers/events, renewals, resident service requests, and notification outbox/delivery attempts.
 - Pure workflow guards for screening/application transitions, offer eligibility, confirmed holding payments, provider-confirmed lease execution, security-deposit receipt, and final deposit reconciliation.
 - Browser-local `/tenant-workflow` covering application entry, screening state, holding terms, lease review, security deposit, move-in checklist, maintenance request/status, renewal choice, move-out notice/checklist, deposit disposition, and an activity feed. It loads the selected public listing and stores workflow progress in the current browser tab.
-- 38 versioned email templates with subject, plain-text, and HTML rendering, escaped interpolation, required-variable checks, secure-link validation, and approval gates for legally/operationally sensitive notices.
+- Server-side email-verified application intake at `/apply/:propertySlug`: validates public property eligibility and fields, records versioned terms consent and an audit event, stores the application as a draft, then submits it only after an explicit one-time email verification POST.
+- Apps Script email bridge and 40 matching versioned email templates in TypeScript and `apps-script/Code.gs`, with HTML escaping, HTTPS links, event-key duplicate suppression, staff review notification, and legal-content gates.
+- Transactional outbox claim/completion functions and an authenticated dispatcher endpoint for retryable post-submission applicant/staff notifications.
 - Leasing workflow specification with tenant lifecycle, status models, holding-fee safeguards, notification catalog, implementation sequence, and acceptance gates.
 - Append-only table grants for captured application consents, application events, and notification delivery attempts. No browser roles have grants on the new leasing tables.
-- `npm run lint`, all 19 unit tests, and `npm run build` passed during this work. The build reports the existing Vite `__dirname` warning.
+- `npm run lint`, all 24 unit tests, and `npm run build` passed before the latest outbox/deployment documentation edits. The build reports the existing Vite `__dirname` warning.
 
 ## Local Only
 
-- Migrations `20261020000004_add_leasing_workflow_foundation.sql` and `20261020000005_add_screening_deposits_lease_workflows.sql` are not applied to the linked hosted database.
+- Migrations `20261020000004_add_leasing_workflow_foundation.sql`, `20261020000005_add_screening_deposits_lease_workflows.sql`, and `20261021000006_add_public_application_intake.sql` are local-only and not applied to the linked hosted database.
 - Supabase CLI `2.121.0` is available via `npx`; it is not a project dependency.
 - Browser-local workflow transitions use session storage and are not authoritative account records. The private workflow tables have no tenant/staff policies or application APIs; the domain guards are exercised by the local workflow service, not a trusted backend.
-- Email templates render locally in code but are not connected to an email provider or delivery worker; no messages are sent. Sensitive legal templates require approved content before rendering.
+- The application server route, Apps Script web app, and durable notification outbox are implemented but unconfigured in this workspace. `SUPABASE_URL`, service-role key, Apps Script URL/shared secret, support/review addresses, base URL, rate-limit secret, and dispatch secret are all absent; real submissions/email therefore fail closed.
+- The Apps Script source is not deployed and no actual mail has been sent. DNS sender authentication and Gmail quota/reputation setup remain unverified.
 
 ## Blocked
 
 - Local migration lint/integration test: `supabase start` and `supabase db start` fail during the internal Realtime migration with a Postgres connection timeout. Postgres reports healthy, the expected `supabase_admin` role exists, but Realtime does not establish a session before the CLI tears down the local containers. The new project migration has therefore not been validated by a running local database.
-- Real applicant submission and screening: require a working migration test target, authenticated server-side API, provider integration, approved consent/screening policy versions, applicant data/retention rules, and operations ownership.
+- Local SQL migration validation: Supabase local startup still times out during its internal Realtime migration, before project SQL is linted. Migration 7 must be validated in a disposable staging Supabase project.
+- Production application intake: requires migration 7 applied to staging/production, server secrets configured, Google Apps Script deployed with a restricted shared secret, the notification dispatcher scheduled, and end-to-end tests with controlled mailboxes.
+- Screening decisions, adverse-action notices, payments, lease execution, tours, and resident operations remain disconnected and require approved integrations and operational policies.
 - Live payments, provider screening, tour booking, e-signature, email/SMS delivery, and resident operations: require approved providers, sandbox access, jurisdiction-specific policies, server-side credentials, and tested webhooks.
 
 ## Not Started
 
 - Tenant sign-in/account UI and persisted saved-home/search UI.
-- Authenticated application submission, staff review queues, multi-applicant account access, and database-backed application state transitions.
-- Notification worker/provider adapters, delivery logs, tenant/staff template preview tooling, and production email/SMS delivery.
+- Staff review UI/queue, multi-applicant/co-applicant submission, applicant status portal, and manual follow-up tools. New applications are persisted but require staff review outside this application.
+- Email bounce/complaint feedback, automated scheduled retries, durable provider message IDs from Apps Script, template preview UI, and production domain-authentication verification.
 - Provider-backed holding/security-deposit checkout, refund/reconciliation, live screening/adverse-action delivery, legally executed lease provider callbacks, resident account integration, and operational maintenance/renewal/move-out workflows.
 - Production end-to-end workflow tests, staff role provisioning procedure, operational monitoring/alerts, and release runbooks for leasing.
 
@@ -47,8 +52,9 @@ This page is the current at-a-glance status. The [Project Guide](PROJECT_GUIDE.m
 
 ## Recommended Next Sequence
 
-1. Resolve local Supabase startup or provide a disposable staging database and lint/test migrations 5 and 6 without touching production.
-2. Record backend runtime and approved consent/policy ownership; provision staging configuration without committing secrets.
-3. Implement the server-backed version of the existing local application flow: authenticated submission, server authorization, append-only application event, staff status update, and outbox notification.
-4. Connect approved screening, payment, and e-signature providers to the existing workflow guards and add authorization, webhook/idempotency, reconciliation, and notification retry tests before live launch.
+1. Apply and lint migrations 5-7 in a disposable staging Supabase project; verify RLS and service-role grants.
+2. Deploy `apps-script/Code.gs`, configure Script Properties and an authorized sender alias, set server-only environment variables, and schedule the notification dispatcher.
+3. Test application submission and email verification with controlled mailboxes, retries, duplicate requests, rate limits, expired tokens, unavailable Apps Script, and staff notifications.
+4. Add a staff review interface and applicant status access before describing application processing as end-to-end.
+5. Connect screening, payment, and e-signature providers only after approved policies and sandbox testing; do not enable live charges or decisions from the browser workflow.
 5. Update this status page in the same change as each feature, marking it done only after its tests and deployment/environment requirements are verified.

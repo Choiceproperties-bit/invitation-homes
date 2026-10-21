@@ -3,6 +3,7 @@ import { createServer as createViteServer } from 'vite';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import * as cheerio from 'cheerio';
+import { ApplicationApiEnvironment, handleApplicationNotificationDispatch, handleApplicationSubmission, handleApplicationVerification, handleApplicationVerificationConfirmation } from './src/services/applicationApi';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -131,6 +132,60 @@ function extractFonts(html: string): string[] {
 async function startServer() {
   const app = express();
   const PORT = Number(process.env.PORT) || 3000;
+
+  app.post('/api/applications', express.json({ limit: '16kb' }), async (req, res) => {
+    try {
+      const headers = new Headers({ 'Content-Type': 'application/json' });
+      const origin = req.get('origin');
+      if (origin) headers.set('Origin', origin);
+      const idempotencyKey = req.get('idempotency-key');
+      if (idempotencyKey) headers.set('Idempotency-Key', idempotencyKey);
+      const request = new Request('http://localhost/api/applications', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(req.body)
+      });
+      const response = await handleApplicationSubmission(
+        request,
+        process.env as ApplicationApiEnvironment,
+        req.ip || req.socket.remoteAddress || 'unknown'
+      );
+      res.status(response.status).set(Object.fromEntries(response.headers.entries())).send(await response.text());
+    } catch {
+      res.status(400).json({ error: 'Invalid application request.' });
+    }
+  });
+
+  app.get('/api/applications/verify', async (req, res) => {
+    const requestUrl = new URL('http://localhost/api/applications/verify');
+    if (typeof req.query.token === 'string') requestUrl.searchParams.set('token', req.query.token);
+    const request = new Request(requestUrl);
+    const response = await handleApplicationVerification(request, process.env as ApplicationApiEnvironment);
+    res.status(response.status).set(Object.fromEntries(response.headers.entries())).send(await response.text());
+  });
+
+  app.post('/api/applications/verify', express.urlencoded({ extended: false, limit: '4kb' }), async (req, res) => {
+    const request = new Request('http://localhost/api/applications/verify', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        ...(req.get('origin') ? { Origin: req.get('origin')! } : {})
+      },
+      body: new URLSearchParams({ token: typeof req.body?.token === 'string' ? req.body.token : '' })
+    });
+    const response = await handleApplicationVerificationConfirmation(request, process.env as ApplicationApiEnvironment);
+    res.status(response.status).set(Object.fromEntries(response.headers.entries())).send(await response.text());
+  });
+
+  app.post('/api/internal/dispatch-notifications', express.json({ limit: '1kb' }), async (req, res) => {
+    const request = new Request('http://localhost/api/internal/dispatch-notifications', {
+      method: 'POST',
+      headers: { Authorization: req.get('authorization') || '' },
+      body: '{}'
+    });
+    const response = await handleApplicationNotificationDispatch(request, process.env as ApplicationApiEnvironment);
+    res.status(response.status).set(Object.fromEntries(response.headers.entries())).send(await response.text());
+  });
 
   if (process.env.NODE_ENV !== 'production' && process.env.ENABLE_CLONER_API === 'true') {
     app.use(express.json({ limit: '20mb' }));
