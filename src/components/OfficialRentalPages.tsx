@@ -9,6 +9,7 @@ import { getPropertyBySlug, searchPropertyListings } from '../services/propertyR
 import { isSupabaseConfigured } from '../lib/supabaseClient';
 import { getPropertyImages } from '../lib/propertyImages';
 import { TenantWorkflowPortal } from './TenantWorkflowPortal';
+import { ApplicationIntakePage } from './ApplicationIntakePage';
 
 const contentPages: Record<string, { title: string; intro: string; links: [string, string][] }> = {
   '/communities/': { title: 'Rental communities', intro: 'Explore newly built single-family rental homes in select communities.', links: [['Find homes for rent', '/search/houses-for-rent'], ['Before you apply', '/before-you-apply']] },
@@ -379,9 +380,8 @@ function PropertyPage({ slug }: { slug: string }) {
             <p className="mt-1 text-3xl font-semibold">${(property.totalMonthlyRent ?? property.monthlyRent).toLocaleString()}<span className="text-base font-normal">/mo</span></p>
             <p className="mt-2 text-sm text-[#555]">Available {property.availableDate}</p>
             <div className="mt-4 border-y border-[#e2e2e2] py-3 text-sm"><div className="flex justify-between gap-3"><span>Monthly rent</span><span>${property.monthlyRent.toLocaleString()}</span></div>{property.securityDeposit != null && <div className="mt-2 flex justify-between gap-3"><span>Security deposit</span><span>${property.securityDeposit.toLocaleString()}</span></div>}</div>
-            {property.applicationUrl
-              ? <a href={property.applicationUrl} target="_blank" rel="noopener noreferrer" className="mt-5 flex min-h-12 items-center justify-center bg-[#168241] px-4 text-sm font-bold text-white hover:bg-[#0b763c]">Apply now</a>
-              : <a href="/how-to-apply" className="mt-5 flex min-h-12 items-center justify-center bg-[#168241] px-4 text-sm font-bold text-white hover:bg-[#0b763c]">Apply now</a>}
+            <a href={`/apply/${encodeURIComponent(property.id)}`} className="mt-5 flex min-h-12 items-center justify-center bg-[#168241] px-4 text-sm font-bold text-white hover:bg-[#0b763c]">Apply now</a>
+            {property.applicationUrl && <a href={property.applicationUrl} target="_blank" rel="noopener noreferrer" className="mt-2 flex min-h-11 items-center justify-center border border-[#168241] px-4 text-sm font-semibold text-[#168241]">Open official application</a>}
             <a href={`/tenant-workflow?property=${encodeURIComponent(property.id)}`} className="mt-2 flex min-h-11 items-center justify-center border border-[#168241] px-4 text-sm font-semibold text-[#168241]">Continue to tenant workflow</a>
             <button type="button" className="mt-2 min-h-12 w-full border border-[#168241] px-4 text-sm font-bold text-[#168241]">View all leasing options</button>
             <details className="mt-5 border-t border-[#e2e2e2] pt-4">
@@ -444,6 +444,7 @@ function ContentPage({ path }: { path: string }) {
 
 export function OfficialRentalPage({ path }: { path: string }) {
   if (path === '/tenant-workflow') return <TenantWorkflowPortal />;
+  if (path.startsWith('/apply/')) return <ApplicationIntakePage propertySlug={decodeURIComponent(path.slice('/apply/'.length))} />;
   if (path.startsWith('/search/')) {
     return <SearchPage />;
   }

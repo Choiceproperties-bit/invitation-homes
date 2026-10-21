@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import test from 'node:test';
 import { EMAIL_TEMPLATE_VERSION, EMAIL_TEMPLATES, EmailTemplateKey, renderEmailTemplate } from './emailTemplates';
 
@@ -19,6 +20,9 @@ const values: Record<string, string> = {
   approvedEmergencyInstructions: 'Approved emergency instructions.',
   offerExpiresAt: 'October 22, 2026 at 5:00 PM local time',
   eventDate: 'October 20, 2026',
+  expiresAt: 'October 21, 2026 1:00 PM UTC',
+  applicationReference: 'IH-1234567890',
+  applicantName: 'Taylor Applicant',
   moveInDate: 'November 1, 2026',
   requestReference: 'M-1001',
   approvedDispositionContent: 'Approved deposit disposition.',
@@ -27,7 +31,7 @@ const values: Record<string, string> = {
 
 test('every catalog event renders versioned subject, plain text, and HTML', () => {
   const keys = Object.keys(EMAIL_TEMPLATES) as EmailTemplateKey[];
-  assert.equal(keys.length, 38);
+  assert.equal(keys.length, 40);
   for (const key of keys) {
     const rendered = renderEmailTemplate(key, values, { approvedContent: true });
     assert.equal(rendered.key, key);
@@ -37,6 +41,13 @@ test('every catalog event renders versioned subject, plain text, and HTML', () =
     assert.ok(rendered.html.startsWith('<!doctype html>'));
     assert.ok(!rendered.html.includes('{{'));
   }
+});
+
+test('Apps Script and application catalogs contain the same template keys', () => {
+  const script = readFileSync(new URL('../../apps-script/Code.gs', import.meta.url), 'utf8');
+  const scriptKeys = Array.from(script.matchAll(/^\s*'([^']+)':\s*\[/gm), (match) => match[1]).sort();
+  const applicationKeys = (Object.keys(EMAIL_TEMPLATES) as EmailTemplateKey[]).sort();
+  assert.deepEqual(scriptKeys, applicationKeys);
 });
 
 test('rendering escapes HTML and rejects unsafe portal URLs', () => {

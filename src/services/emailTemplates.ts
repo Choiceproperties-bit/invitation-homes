@@ -57,11 +57,23 @@ const emailTemplates = {
     paragraphs: ['Your application for {{propertyAddress}} has been started.', 'Sign in to review saved information and complete any remaining sections.'],
     actionLabel: 'Continue application'
   },
+  'application.verify_email': {
+    subject: 'Verify your email to submit your application',
+    title: 'Verify your email address',
+    paragraphs: ['You started an application for {{propertyAddress}}.', 'Use the secure link below to verify this email address and submit the application. This link expires at {{expiresAt}}. If you did not start the application, you can ignore this email.'],
+    actionLabel: 'Verify email and submit'
+  },
   'application.submitted': {
     subject: 'We received your application',
     title: 'Application received',
-    paragraphs: ['We received the application for {{propertyAddress}} on {{submittedAt}}.', 'You can review current status and requests for additional information in your account.'],
-    actionLabel: 'View application'
+    paragraphs: ['We received the application for {{propertyAddress}} on {{submittedAt}}.', 'Your application reference is {{applicationReference}}. Keep this reference for follow-up. The application is not a screening decision, lease offer, or reservation.'],
+    actionLabel: 'Return to home search'
+  },
+  'application.staff_submitted': {
+    subject: 'New application submitted: {{applicationReference}}',
+    title: 'New application received',
+    paragraphs: ['An application was submitted for {{propertyAddress}} by {{applicantName}}.', 'Reference: {{applicationReference}}. Submitted at {{submittedAt}}. Review the applicant details only through the authorized staff workflow.'],
+    actionLabel: 'Open staff application queue'
   },
   'application.fee_receipt': {
     subject: 'Receipt for your application fee',

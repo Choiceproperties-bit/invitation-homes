@@ -1,6 +1,6 @@
 # Invitation Homes Frontend Replica
 
-An authorized Vite + React backup of the public Invitation Homes renter experience. This project is not yet a production leasing or resident platform: its public listing/search slice is connected to Supabase and has a 60-listing pilot across 20 markets, while authentication, saved-home persistence, applications, scheduled/self-guided tours, payments, and resident services are not connected. See [Implementation Status](docs/IMPLEMENTATION_STATUS.md) for what is done, local-only, blocked, or not started; see the [Project Guide](docs/PROJECT_GUIDE.md) for architecture, data, sync, and security details.
+An authorized Vite + React renter experience with a 60-listing public inventory pilot. Email-verified application intake and Google Apps Script notification plumbing are implemented but require server secrets and database migrations to be deployed. This is not yet a production leasing/resident platform: screening, account access, payments, tours, lease execution, and resident operations are not connected. See [Implementation Status](docs/IMPLEMENTATION_STATUS.md) for done/blocked work and [Project Guide](docs/PROJECT_GUIDE.md) for architecture and setup.
 
 ## Current Experience
 
@@ -11,7 +11,8 @@ An authorized Vite + React backup of the public Invitation Homes renter experien
 - Property detail routes at `/houses-for-rent/:slug` with a photo gallery, rent summary, listing sections, and optional property-specific 360-degree tour or floor-plan media.
 - Qualification, before-you-apply, application-process, and leasing-fees pages.
 - A tenant workflow at `/tenant-workflow` covering application, screening state, holding terms, lease review, security deposit, move-in, maintenance, renewal, move-out, deposit disposition, and an in-app activity timeline. The browser-local workflow is not server-backed: it does not submit operational applications, run screening, reserve homes, move funds, execute legal documents, create work orders, or send notices.
-- 38 versioned transactional email templates with plain-text and HTML renderers in `src/services/emailTemplates.ts`. Sensitive legal/incident templates require approved content, and no email provider or delivery worker is connected.
+- Email-verified application intake at `/apply/:propertySlug`: submission is stored as a draft, terms consent is versioned, and a one-time email link is required before the application is marked submitted. It requires migration 7 plus server-side configuration.
+- 40 versioned transactional email templates in TypeScript and Google Apps Script. Sensitive legal/incident templates require approved content. Apps Script delivery uses a transactional outbox with retry status; the script and server environment still need deployment/configuration.
 - Google Maps integration in the search view. Without a configured key, the page displays a setup message instead of a simulated map.
 - A Playwright capture script for comparing the official and local homepages at desktop and mobile viewports.
 
@@ -38,6 +39,10 @@ Open [http://localhost:3000](http://localhost:3000). The server uses the `PORT` 
 ## Supabase Inventory Setup
 
 The initial inventory schema, RLS policies, saved-data tables, paginated search RPCs, official-source fields, and market-slug search RPC have been applied to the linked Supabase project. Public inventory search/detail reads are connected; applicant PII, resident authentication flows, payments, tour booking, and maintenance workflows are not implemented.
+
+Application intake is separate from the public inventory client. Apply migration `20261021000006_add_public_application_intake.sql` to staging first. The intake endpoint requires server-only `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `APPLICATION_BASE_URL`, `APPLICATION_RATE_LIMIT_SECRET`, `APPLICATION_DISPATCH_SECRET`, `APPS_SCRIPT_WEB_APP_URL`, `APPS_SCRIPT_SHARED_SECRET`, `APPLICATION_SUPPORT_EMAIL`, and `APPLICATION_REVIEW_EMAIL`. Configure these in the Node server environment or Cloudflare Pages Functions secrets. Never use `VITE_` for these values.
+
+Deploy the Google Apps Script in [apps-script/Code.gs](apps-script/Code.gs) as a web app, set its `APP_EMAIL_SHARED_SECRET` Script Property to the same long random value used by `APPS_SCRIPT_SHARED_SECRET`, and configure a verified `SENDER_EMAIL_ALIAS` if using one. See [Google Apps Script email setup](docs/GOOGLE_APPS_SCRIPT_EMAIL.md) for Gmail quotas and sender-domain SPF/DKIM/DMARC setup. Inbox placement cannot be guaranteed.
 
 To link another project and apply migrations, use the Supabase CLI from your own terminal:
 
